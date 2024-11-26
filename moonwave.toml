@@ -1,5 +1,6 @@
 title = "Planck Scheduler"
 classOrder = ["Scheduler", "Pipeline", "Phase"]
+gitSourceBranch = "main"
 
 [docusaurus]
 tagline = "An Agnostic Scheduler for ECS"

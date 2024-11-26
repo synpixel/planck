@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunkdocs=self.webpackChunkdocs||[]).push([[848],{63891:e=>{e.exports=JSON.parse('{"sourceUrl":"https://github.com/YetAnotherClown/planck/blob/main","baseUrl":"/planck/","classOrder":["Scheduler","Pipeline","Phase"],"apiCategories":[]}')}}]);

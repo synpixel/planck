@@ -72,16 +72,16 @@ function HeroBanner() {
 					{siteConfig.tagline}
 				</p>
 				<div>
-					<a class="button button--secondary button--lg" style={{ marginRight: "1rem" }} href="/docs/intro">
+					<Link class="button button--secondary button--lg" style={{ marginRight: "1rem" }} to="/docs/intro">
 						<span class={styles["hero-button-text"]}>Get Started</span>
-					</a>
-					<a
+					</Link>
+					<Link
 						class="button button--outline button--secondary button--lg hero-button"
 						style={{ marginRight: "1rem" }}
-						href="/api"
+						to="/api"
 					>
 						<span class={styles["hero-button-text"]}>API</span>
-					</a>
+					</Link>
 				</div>
 			</div>
 		</div>

@@ -192,4 +192,27 @@ describe("scheduler", function()
 		bool = false
 		myScheduler:runAll() -- Expect system to not run
 	end)
+
+	describe("startup systems", function()
+		test("should run once", function()
+			expect.assertions(1)
+
+			local myScheduler = Scheduler.new(1, 2, 3):addSystems(function(...)
+				expect({ ... }).toEqual({ 1, 2, 3 })
+			end, Phase.Startup)
+
+			myScheduler:runAll()
+			myScheduler:runAll()
+		end)
+
+		test("can be ran", function()
+			expect.assertions(2)
+
+			local myScheduler = Scheduler.new(1, 2, 3):addSystems(function(...)
+				expect({ ... }).toEqual({ 1, 2, 3 })
+			end, Phase.Startup)
+
+			myScheduler:run(Phase.Startup)
+		end)
+	end)
 end)

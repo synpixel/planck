@@ -207,12 +207,26 @@ function Scheduler:runPipeline(pipeline)
 	end
 end
 
+function Scheduler:_handleStartup()
+	if not self._startupFinished then
+		self:runPipeline(Pipeline.Startup)
+
+		for _, phase in Pipeline.Startup._phases do
+			local index = table.find(self._phases, phase)
+			table.remove(self._phases, index)
+		end
+
+		self._startupFinished = true
+	end
+end
+
 --- @method runAll
 --- @within Scheduler
 --- @return Scheduler
 ---
 --- Runs all Systems within order.
 function Scheduler:runAll()
+	self:_handleStartup()
 	self:runPipeline(self)
 end
 
@@ -241,6 +255,8 @@ function Scheduler:run(dependent)
 	if not dependent then
 		error("No dependent specified in Scheduler:run(_)")
 	end
+
+	self:_handleStartup()
 
 	if typeof(dependent) == "function" then
 		self:runSystem(dependent)
@@ -642,6 +658,7 @@ function Scheduler.new(...)
 
 	self._MAIN_PHASE = Phase.Update
 	self._heartbeat = Heartbeat
+	self._startupFinished = false
 	self._vargs = table.pack(...)
 	self._phases = {}
 	self._phaseToSystems = {}

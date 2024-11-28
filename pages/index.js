@@ -11,6 +11,15 @@ const FEATURES = [
 		description: <>It does not matter what ECS library you are using, this scheduler is agnostic!</>,
 	},
 	{
+		title: "Inspired by Flecs and Bevy",
+		description: (
+			<>
+				This library takes inspiration from Flecs for Phases and Pipelines, and Bevy Schedules for the API
+				design.
+			</>
+		),
+	},
+	{
 		title: "Designed to be Ergonomic",
 		description: (
 			<>
@@ -20,11 +29,22 @@ const FEATURES = [
 		),
 	},
 	{
-		title: "Inspired by Flecs and Bevy",
+		title: "Plugins System",
 		description: (
 			<>
-				This library takes inspiration from Flecs for Phases and Pipelines, and Bevy Schedules for the API
-				design.
+				<p>
+					Planck features a Plugin system, allowing for easy incorporation of other tools and libraries into
+					the Scheduler.
+				</p>
+				<p>
+					Planck features two Plugins for the <Link to="/docs/plugins/jabby">Jabby Debugger</Link> and{" "}
+					<Link to="/docs/plugins/matter_hooks">Matter Hooks</Link>
+				</p>
+				<div class="card__footer">
+					<Link class="button button--outline button--secondary button--block" to="/docs/plugins">
+						Learn More
+					</Link>
+				</div>
 			</>
 		),
 	},

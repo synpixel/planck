@@ -165,3 +165,10 @@ scheduler:setRunCondition(systemA, function(world)
     return someCondition and true or false
 end)
 ```
+
+### Plugins
+
+The Planck Scheduler is pluggable, providing plugins to add
+support for Jabby and the Matter Hooks runtime.
+
+You can learn more in the [Plugin Docs](https://yetanotherclown.github.io/planck/docs/plugins/).

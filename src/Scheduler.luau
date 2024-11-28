@@ -193,6 +193,11 @@ type SystemCall = {
 	nextFn: ((any) -> any)?,
 }
 
+--- @method addPlugin
+--- @within Scheduler
+--- @param plugin PlanckPlugin
+---
+--- Initializes a plugin with the scheduler, see the [Plugin Docs](/docs/plugins) for more information.
 function Scheduler:addPlugin(plugin)
 	plugin:build(self)
 	return self

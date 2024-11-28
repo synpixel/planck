@@ -1,5 +1,5 @@
 {
-  "name": "Planck",
+  "name": "PlanckJabby",
   "tree": {
     "$className": "DataModel",
     "ReplicatedStorage": {
@@ -7,13 +7,10 @@
         "$path": "DevPackages"
       },
       "Packages": {
-        "$className": "Folder",
-        "Project": {
-          "$path": "dist/src"
-        },
-        "planckMatterHooks": {
-          "$path": "dist/plugins/planck_matter_hooks/src"
-        }
+        "$path": "Packages"
+      },
+      "Project": {
+        "$path": "dist/src"
       }
     },
     "ServerScriptService": {

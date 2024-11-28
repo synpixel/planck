@@ -7,7 +7,7 @@
     "luau-lsp.require.directoryAliases": {
         "@Project": "src/",
         "@DevPackages": "DevPackages/",
-        "@Plugins": "plugins/"
+        "@Packages": "Packages/"
     },
     "luau-lsp.ignoreGlobs": [
         "DevPackages/*",

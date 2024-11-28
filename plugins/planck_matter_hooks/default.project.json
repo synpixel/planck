@@ -1,19 +1,13 @@
 {
-  "name": "Planck",
+  "name": "PlanckMatterHooks",
   "tree": {
     "$className": "DataModel",
     "ReplicatedStorage": {
       "DevPackages": {
         "$path": "DevPackages"
       },
-      "Packages": {
-        "$className": "Folder",
-        "Project": {
-          "$path": "src"
-        },
-        "planckMatterHooks": {
-          "$path": "plugins/planck_matter_hooks/src"
-        }
+      "Project": {
+        "$path": "src"
       }
     },
     "ServerScriptService": {

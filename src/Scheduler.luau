@@ -173,15 +173,80 @@ Pipeline.Main = Pipeline.new()
 local Scheduler = {}
 Scheduler.__index = Scheduler
 
+Scheduler.Hooks = {
+	SystemAdd = "SystemAdd",
+	SystemRemove = "SystemRemove",
+	SystemEdit = "SystemEdit",
+	SystemCallOuter = "SystemCallOuter",
+	SystemCallInner = "SystemCallInner",
+	SystemCall = "SystemCall",
+
+	PhaseBegan = "PhaseBegan",
+}
+
+type SystemCall = {
+	scheduler: nil,
+	system: {
+		name: string,
+		fn: (any) -> any,
+	},
+	nextFn: ((any) -> any)?,
+}
+
+function Scheduler:addPlugin(plugin)
+	plugin:build(self)
+	return self
+end
+
+function Scheduler:_addHook(hook, fn)
+	table.insert(self._hooks[hook], fn)
+end
+
+local function handleRunHooks(scheduler, hookName, system, call)
+	local hooks = scheduler._hooks[scheduler.Hooks[hookName]]
+	if hooks then
+		for _, hook in hooks do
+			call = hook({
+				scheduler = nil,
+				system = {
+					name = "",
+					fn = system,
+					phase = scheduler._systemToPhase[system],
+				},
+				nextFn = call,
+			})
+		end
+	end
+
+	call()
+end
+
 function Scheduler:runSystem(system)
 	local runIf = self._runIfConditions[system]
 	if runIf and not runIf(table.unpack(self._vargs)) then
 		return
 	end
 
-	local success, err = pcall(system, table.unpack(self._vargs))
+	local function systemCall()
+		local final = function()
+			local success, err = pcall(system, table.unpack(self._vargs))
+			if not success then
+				warn(`Error occurred when running system: {err}`)
+			end
+		end
+
+		handleRunHooks(self, "SystemCall", system, final)
+	end
+
+	local function inner()
+		handleRunHooks(self, "SystemCallInner", system, systemCall)
+	end
+
+	local success, err =
+		pcall(handleRunHooks, self, "SystemCallOuter", system, inner)
+
 	if not success then
-		warn(`Error occurred when running system: {err}`)
+		warn(`Error occurred when running hooks: {err}`)
 	end
 end
 
@@ -189,6 +254,19 @@ function Scheduler:runPhase(phase)
 	local runIf = self._runIfConditions[phase]
 	if runIf and not runIf(table.unpack(self._vargs)) then
 		return
+	end
+
+	local hooks = self._hooks[self.Hooks.PhaseBegan]
+	local info = {
+		scheduler = self,
+		phase = phase,
+	}
+
+	for _, hook in hooks do
+		local success, err = pcall(hook, info)
+		if not success then
+			warn("Unexpected error in hook:", err)
+		end
 	end
 
 	for _, system in self._phaseToSystems[phase] do
@@ -488,6 +566,35 @@ function Scheduler:insertAfter(dependent, dependency)
 	return self
 end
 
+function Scheduler:_addSystem(system, phase)
+	table.insert(self._phaseToSystems[phase], system)
+	self._systemToPhase[system] = phase
+
+	local name = debug.info(system, "n")
+	if not name or string.len(name) == 0 then
+		name = debug.info(system, "sl")
+	end
+
+	self._systemNames[system] = name
+
+	local hooks = self._hooks[self.Hooks.SystemAdd]
+	local info = {
+		scheduler = self,
+		system = {
+			name = name,
+			phase = phase,
+			fn = system,
+		},
+	}
+
+	for _, hook in hooks do
+		local success, err = pcall(hook, info)
+		if not success then
+			warn("Unexpected error in hook:", err)
+		end
+	end
+end
+
 --- @method addSystems
 --- @within Scheduler
 --- @param systems System | { System }
@@ -510,7 +617,7 @@ function Scheduler:addSystems(systems, phase)
 				phase = systems.phase
 			end
 
-			table.insert(self._phaseToSystems[phase], systems.system)
+			self:_addSystem(systems.system, phase)
 		else
 			for _, system in systems do
 				if type(system) == "table" then
@@ -519,14 +626,14 @@ function Scheduler:addSystems(systems, phase)
 							phase = systems.phase
 						end
 
-						table.insert(self._phaseToSystems[phase], system.system)
+						self:_addSystem(system.system, phase)
 					else
 						error(
 							"Unknown system passed to Scheduler:addSystems({ unknown }, phase)"
 						)
 					end
 				elseif type(system) == "function" then
-					table.insert(self._phaseToSystems[phase], system)
+					self:_addSystem(system, phase)
 				else
 					error(
 						"Unknown system passed to Scheduler:addSystems({ unknown }, phase)"
@@ -535,7 +642,7 @@ function Scheduler:addSystems(systems, phase)
 			end
 		end
 	elseif type(systems) == "function" then
-		table.insert(self._phaseToSystems[phase], systems)
+		self:_addSystem(systems, phase)
 	else
 		error("Unknown system passed to Scheduler:addSystems(unknown, phase)")
 	end
@@ -561,6 +668,7 @@ function Scheduler:editSystem(system, phase)
 		if i then
 			table.remove(self._phaseToSystems[_phase], i)
 			table.insert(self._phaseToSystems[phase], system)
+			self._systemToPhase[system] = phase
 		end
 	end
 
@@ -573,12 +681,34 @@ end
 ---
 --- Removes the System from the Scheduler.
 function Scheduler:removeSystem(system)
+	local systemPhase = nil
 	for _, phase in self._phases do
 		local i = table.find(self._phaseToSystems[phase], system)
 		if i then
+			systemPhase = phase
 			table.remove(self._phaseToSystems[phase], i)
+			self._systemToPhase[system] = nil
 		end
 	end
+
+	local hooks = self._hooks[self.Hooks.SystemRemove]
+	local info = {
+		scheduler = self,
+		system = {
+			name = self._systemNames[system],
+			phase = systemPhase,
+			fn = system,
+		},
+	}
+
+	for _, hook in hooks do
+		local success, err = pcall(hook, info)
+		if not success then
+			warn("Unexpected error in hook:", err)
+		end
+	end
+
+	self._systemNames[system] = nil
 
 	return self
 end
@@ -590,13 +720,49 @@ end
 ---
 --- Replaces the System with a new System.
 function Scheduler:replaceSystem(old, new)
+	local systemPhase = nil
+
 	for _, phase in self._phases do
 		local i = table.find(self._phaseToSystems[phase], old)
 		if i then
+			systemPhase = phase
 			table.remove(self._phaseToSystems[phase], i)
 			table.insert(self._phaseToSystems[phase], i, new)
+			self._systemToPhase[old] = nil
+			self._systemToPhase[new] = phase
 		end
 	end
+
+	local name = debug.info(new, "n")
+	if not name or string.len(name) == 0 then
+		name = debug.info(new, "sl")
+	end
+
+	self._systemNames[new] = name
+
+	local hooks = self._hooks[self.Hooks.SystemAdd]
+	local info = {
+		scheduler = self,
+		new = {
+			name = name,
+			phase = systemPhase,
+			fn = new,
+		},
+		old = {
+			name = self._systemNames[old],
+			phase = systemPhase,
+			fn = old,
+		},
+	}
+
+	for _, hook in hooks do
+		local success, err = pcall(hook, info)
+		if not success then
+			warn("Unexpected error in hook:", err)
+		end
+	end
+
+	self._systemNames[old] = nil
 
 	return self
 end
@@ -660,11 +826,14 @@ function Scheduler.new(...)
 	self._heartbeat = Heartbeat
 	self._startupFinished = false
 	self._vargs = table.pack(...)
+	self._hooks = {}
 	self._phases = {}
 	self._phaseToSystems = {}
+	self._systemToPhase = {}
 	self._eventToPhases = {}
 	self._runIfConditions = {}
 	self._connectedEvents = {}
+	self._systemNames = {}
 
 	setmetatable(self, Scheduler)
 
@@ -690,6 +859,12 @@ function Scheduler.new(...)
 	for _, event in runServiceEvents do
 		i += 1
 		self:_insertPhaseAt(Phase[event], i, RunService, event)
+	end
+
+	for _, hookName in self.Hooks do
+		if not self._hooks[hookName] then
+			self._hooks[hookName] = {}
+		end
 	end
 
 	return self

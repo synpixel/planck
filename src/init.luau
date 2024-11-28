@@ -57,7 +57,14 @@ type Pipeline = {
 	new: (debugName: string?) -> Pipeline,
 }
 
+type Plugin<U...> = {
+	build: (self: Plugin<U...>, scheduler: Scheduler<U...>) -> (),
+	[any]: any,
+}
+
 type Scheduler<U...> = {
+	addPlugin: (self: Scheduler<U...>, plugin: Plugin<U...>) -> Scheduler<U...>,
+
 	addSystems: (
 		self: Scheduler<U...>,
 		systems: System<U...> | { System<U...> },

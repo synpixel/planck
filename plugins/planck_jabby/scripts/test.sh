@@ -2,7 +2,7 @@
 
 set -e
 
-OUTPUT=Planck.rbxl
+OUTPUT=PlanckJabby.rbxl
 
 # If Packages aren't installed, install them.
 if [ ! -d "DevPackages" ]; then
@@ -12,7 +12,6 @@ fi
 
 rojo sourcemap default.project.json --output sourcemap.json \
     && darklua process --config .darklua.json src/ dist/src \
-    && darklua process --config .darklua.json plugins/planck_matter_hooks dist/plugins/planck_matter_hooks \
     && darklua process --config .darklua.json scripts/run-tests.server.luau dist/run-tests.server.luau \
     && rojo build dev.project.json --output $OUTPUT \
     && run-in-roblox --place $OUTPUT --script dist/run-tests.server.luau

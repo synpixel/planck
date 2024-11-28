@@ -7,7 +7,7 @@
 				"sources": {
 					"@Project": "src/",
 					"@DevPackages": "DevPackages/",
-					"@Plugins": "plugins/"
+					"@Packages": "Packages/"
 				}
 			},
 			"target": {

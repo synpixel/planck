@@ -4,8 +4,8 @@ description: A Plugin to add support for Jabby
 sidebar_position: 2
 ---
 
-Jabby is a Debugger for Jecs by Ukendio. This Plugin handles all setup to
-add the Planck Scheduler to Jabby.
+[Jabby](https://github.com/alicesaidhi/jabby), by alicesaidhi, is a Debugger developed for [Jecs](https://github.com/Ukendio/jecs), an ECS library by Ukendio.
+This Plugin handles all setup to add the Planck Scheduler to Jabby.
 
 You can install it with,
 

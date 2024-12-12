@@ -5,8 +5,7 @@ sidebar_position: 1
 ---
 
 The Matter Hooks plugin provides a way to use the Matter topoRuntime to use any
-hook made for Matter.
-
+hook made for [Matter](https://github.com/matter-ecs/matter).
 
 You can install it with,
 

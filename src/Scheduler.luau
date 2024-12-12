@@ -5,6 +5,18 @@ local function getEventIdentifier(instance, event)
 	return `{instance}{event and `@{event}` or ""}`
 end
 
+--- @type SystemFn ((U...) -> any)
+--- @within Scheduler
+
+--- @interface SystemTable
+--- @within Scheduler
+--- .system SystemFn<U...>
+--- .phase Phase?
+--- .[any] any
+
+--- @type System SystemFn<U...> | SystemTable<U...>
+--- @within Scheduler
+
 --- @class Phase
 ---
 --- Phases represent tags that tell the scheduler when to

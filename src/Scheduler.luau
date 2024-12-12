@@ -640,7 +640,7 @@ function Scheduler:addSystems(systems, phase)
 				if type(system) == "table" then
 					if system.system then
 						if system.phase then
-							phase = systems.phase
+							phase = system.phase
 						end
 
 						self:_addSystem(system.system, phase)

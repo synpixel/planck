@@ -36,6 +36,14 @@ function Plugin:build(scheduler: any)
 
 	local systemToId = {}
 
+	for system, systemName in scheduler._systemNames do
+		local id = jabbyScheduler:register_system({
+			name = systemName,
+		})
+
+		systemToId[system] = id
+	end
+
 	scheduler:_addHook(
 		scheduler.Hooks.SystemAdd,
 		function(info: SystemsAddRemove)

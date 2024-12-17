@@ -1,9 +1,19 @@
---!nonstrict
 local RunService = game:GetService("RunService")
 
-local function getEventIdentifier(instance, event)
-	return `{instance}{event and `@{event}` or ""}`
-end
+local Pipeline = require("@Project/Pipeline")
+local Phase = require("@Project/Phase")
+
+local utils = require("@Project/utils")
+local hooks = require("@Project/hooks")
+
+local getSystem = utils.getSystem
+local getSystemName = utils.getSystemName
+
+local isPhase = utils.isPhase
+local isPipeline = utils.isPipeline
+
+local isValidEvent = utils.isValidEvent
+local getEventIdentifier = utils.getEventIdentifier
 
 --- @type SystemFn ((U...) -> any)
 --- @within Scheduler
@@ -17,165 +27,6 @@ end
 --- @type System SystemFn<U...> | SystemTable<U...>
 --- @within Scheduler
 
---- @class Phase
----
---- Phases represent tags that tell the scheduler when to
---- schedule a set of systems.
-local Phase = {}
-Phase.__index = Phase
-
-function Phase:__tostring()
-	return self._name
-end
-
---- @within Phase
----
---- Creates a new Phase, with an optional name to use for debugging.
---- When no name is provided, the script and line number will be used.
-function Phase.new(name: string?)
-	name = name or debug.info(2, "sl")
-	return setmetatable({
-		_name = name,
-		_type = "phase",
-	}, Phase)
-end
-
---- @prop PreStartup Phase
---- @within Phase
---- Runs before the `Startup` Phase.
-
---- @prop Startup Phase
---- @within Phase
---- This Phase will run once, the first time the Scheduler is ran,
---- before any other Phases are ran.
-
---- @prop PostStartup Phase
---- @within Phase
---- Runs after the `Startup` phase.
-
-Phase.PreStartup = Phase.new("PreStartup")
-Phase.Startup = Phase.new("Startup")
-Phase.PostStartup = Phase.new("PostStartup")
-
---- @prop PreRender Phase
---- @within Phase
---- Runs on the `RunService.PreRender` Event.
-
---- @prop PreAnimation Phase
---- @within Phase
---- Runs on the `RunService.PreAnimation` Event.
-
---- @prop PreSimulation Phase
---- @within Phase
---- Runs on the `RunService.PreSimulation` Event.
-
---- @prop PostSimulation Phase
---- @within Phase
---- Runs on the `RunService.PostSimulation` Event.
-
-Phase.PreRender = Phase.new("PreRender")
-Phase.PreAnimation = Phase.new("PreAnimation")
-Phase.PreSimulation = Phase.new("PreSimulation")
-Phase.PostSimulation = Phase.new("PostSimulation")
-
---- @prop First Phase
---- @within Phase
---- Will always run first on the `RunService.Heartbeat` Event.
-
---- @prop PreUpdate Phase
---- @within Phase
---- Runs before the `Update` Phase.
-
---- @prop Update Phase
---- @within Phase
---- Runs on the `RunService.Heartbeat` Event.
---- This is the default Phase systems will run on.
-
---- @prop PostUpdate Phase
---- @within Phase
---- Runs after the `Update` Phase.
-
---- @prop Last Phase
---- @within Phase
---- Will always run last on the `RunService.Heartbeat` Event.
-
-Phase.First = Phase.new("First")
-Phase.PreUpdate = Phase.new("PreUpdate")
-Phase.Update = Phase.new("Update")
-Phase.PostUpdate = Phase.new("PostUpdate")
-Phase.Last = Phase.new("Last")
-
---- @class Pipeline
----
---- Pipelines represent a set of ordered Phases. Systems cannot be
---- assigned to Pipelines themselves, but rather to Phases within
---- those Pipelines.
-local Pipeline = {}
-Pipeline.__index = Pipeline
-
-function Pipeline:__tostring()
-	return self._name
-end
-
---- @method insert
---- @within Pipeline
---- @param phase Phase
---- @return Pipeline
----
---- Adds a Phase to the Pipeline, ordering it implicitly.
-function Pipeline:insert(phase)
-	table.insert(self._phases, phase)
-	return self
-end
-
---- @method insert
---- @within Pipeline
---- @param phase Phase
---- @param after Phase
---- @return Pipeline
----
---- Adds a Phase to the Pipeline after another Phase, ordering it explicitly.
-function Pipeline:insertAfter(phase, otherPhase)
-	local i = table.find(self._phases, phase)
-	assert(i, "Phase not initialized in Pipeline")
-
-	table.insert(self._phases, i + 1, otherPhase)
-	return self
-end
-
---- @within Pipeline
----
---- Creates a new Pipeline, with an optional name to use for debugging.
---- When no name is provided, the script and line number will be used.
-function Pipeline.new(name: string?)
-	name = name or debug.info(2, "sl")
-	return setmetatable({
-		_name = name,
-		_type = "pipeline",
-		_phases = {},
-	}, Pipeline)
-end
-
---- @prop Startup Pipeline
---- @within Pipeline
----
---- A Pipeline containing the `PreStartup`, `Startup`, and `PostStartup` phases.
-Pipeline.Startup = Pipeline.new()
-	:insert(Phase.PreStartup)
-	:insert(Phase.Startup)
-	:insert(Phase.PostStartup)
-
---- @prop Main Pipeline
---- @within Pipeline
----
---- A Pipeline containing the `First`, `PreUpdate`, `Update`, `PostUpdate`, and `Last` phases.
-Pipeline.Main = Pipeline.new()
-	:insert(Phase.First)
-	:insert(Phase.PreUpdate)
-	:insert(Phase.Update)
-	:insert(Phase.PostUpdate)
-	:insert(Phase.Last)
-
 --- @class Scheduler
 ---
 --- An Object which handles scheduling Systems to run within different
@@ -185,25 +36,7 @@ Pipeline.Main = Pipeline.new()
 local Scheduler = {}
 Scheduler.__index = Scheduler
 
-Scheduler.Hooks = {
-	SystemAdd = "SystemAdd",
-	SystemRemove = "SystemRemove",
-	SystemEdit = "SystemEdit",
-	SystemCallOuter = "SystemCallOuter",
-	SystemCallInner = "SystemCallInner",
-	SystemCall = "SystemCall",
-
-	PhaseBegan = "PhaseBegan",
-}
-
-type SystemCall = {
-	scheduler: nil,
-	system: {
-		name: string,
-		fn: (any) -> any,
-	},
-	nextFn: ((any) -> any)?,
-}
+Scheduler.Hooks = hooks.Hooks
 
 --- @method addPlugin
 --- @within Scheduler
@@ -216,75 +49,73 @@ function Scheduler:addPlugin(plugin)
 end
 
 function Scheduler:_addHook(hook, fn)
+	assert(self._hooks[hook], `Unknown Hook: {hook}`)
 	table.insert(self._hooks[hook], fn)
-end
-
-local function handleRunHooks(scheduler, hookName, system, call)
-	local hooks = scheduler._hooks[scheduler.Hooks[hookName]]
-	if hooks then
-		for _, hook in hooks do
-			call = hook({
-				scheduler = nil,
-				system = {
-					name = "",
-					fn = system,
-					phase = scheduler._systemToPhase[system],
-				},
-				nextFn = call,
-			})
-		end
-	end
-
-	call()
 end
 
 function Scheduler:runSystem(system)
 	local runIf = self._runIfConditions[system]
-	if runIf and not runIf(table.unpack(self._vargs)) then
+	if runIf and runIf(table.unpack(self._vargs)) == false then
 		return
 	end
 
+	local systemInfo = self._systemInfo[system]
+
+	if not self._thread then
+		self._thread = coroutine.create(function()
+			while true do
+				local fn = coroutine.yield()
+				self._yielded = true
+				fn()
+				self._yielded = false
+			end
+		end)
+
+		coroutine.resume(self._thread)
+	end
+
 	local function systemCall()
-		local final = function()
-			local success, err = pcall(system, table.unpack(self._vargs))
+		local function noYield()
+			local success, err = coroutine.resume(self._thread, function()
+				system(table.unpack(self._vargs))
+			end)
+
+			if self._yielded then
+				table.insert(systemInfo.logs, "System yielded")
+			end
+
 			if not success then
-				warn(`Error occurred when running system: {err}`)
+				table.insert(systemInfo.logs, `System errored: {err}`)
 			end
 		end
 
-		handleRunHooks(self, "SystemCall", system, final)
+		hooks.systemCall(self, "SystemCall", systemInfo, noYield)
 	end
 
 	local function inner()
-		handleRunHooks(self, "SystemCallInner", system, systemCall)
+		hooks.systemCall(self, "InnerSystemCall", systemInfo, systemCall)
 	end
 
-	local success, err =
-		pcall(handleRunHooks, self, "SystemCallOuter", system, inner)
+	local function outer()
+		hooks.systemCall(self, "OuterSystemCall", systemInfo, inner)
+	end
 
+	local success, err: string? = pcall(outer)
 	if not success then
-		warn(`Error occurred when running hooks: {err}`)
+		table.insert(
+			systemInfo.logs,
+			`System errored while Running Hooks: {err}`
+		)
 	end
 end
 
 function Scheduler:runPhase(phase)
 	local runIf = self._runIfConditions[phase]
-	if runIf and not runIf(table.unpack(self._vargs)) then
+	if runIf and runIf(table.unpack(self._vargs)) == false then
 		return
 	end
 
-	local hooks = self._hooks[self.Hooks.PhaseBegan]
-	local info = {
-		scheduler = self,
-		phase = phase,
-	}
-
-	for _, hook in hooks do
-		local success, err = pcall(hook, info)
-		if not success then
-			warn("Unexpected error in hook:", err)
-		end
-	end
+	hooks.phaseBegan(self, phase)
 
 	for _, system in self._phaseToSystems[phase] do
 		self:runSystem(system)
@@ -293,36 +124,13 @@ end
 
 function Scheduler:runPipeline(pipeline)
 	local runIf = self._runIfConditions[pipeline]
-	if runIf and not runIf(table.unpack(self._vargs)) then
+	if runIf and runIf(table.unpack(self._vargs)) == false then
 		return
 	end
 
 	for _, phase in pipeline._phases do
 		self:runPhase(phase)
 	end
-end
-
-function Scheduler:_handleStartup()
-	if not self._startupFinished then
-		self:runPipeline(Pipeline.Startup)
-
-		for _, phase in Pipeline.Startup._phases do
-			local index = table.find(self._phases, phase)
-			table.remove(self._phases, index)
-		end
-
-		self._startupFinished = true
-	end
-end
-
---- @method runAll
---- @within Scheduler
---- @return Scheduler
----
---- Runs all Systems within order.
-function Scheduler:runAll()
-	self:_handleStartup()
-	self:runPipeline(self)
 end
 
 --- @method run
@@ -351,112 +159,49 @@ function Scheduler:run(dependent)
 		error("No dependent specified in Scheduler:run(_)")
 	end
 
-	self:_handleStartup()
+	self:runPipeline(Pipeline.Startup)
 
-	if typeof(dependent) == "function" then
+	if getSystem(dependent) then
 		self:runSystem(dependent)
-	elseif typeof(dependent) == "table" then
-		if dependent.system then
-			self:runSystem(dependent.system)
-		elseif not dependent._type then
-			error("Unknown dependent passed to Scheduler:run(unknown)")
-		end
+	elseif isPhase(dependent) then
+		self:runPhase(dependent)
+	elseif isPipeline(dependent) then
+		self:runPipeline(dependent)
+	else
+		error("Unknown dependent passed into Scheduler:run(unknown)")
+	end
 
-		if dependent._type == "phase" then
-			self:runPhase(dependent)
-		elseif dependent._type == "pipeline" then
-			self:runPipeline(dependent)
-		end
+	return self
+end
+
+--- @method runAll
+--- @within Scheduler
+--- @return Scheduler
+---
+--- Runs all Systems within order.
+function Scheduler:runAll()
+	for _, phase in self._orderedPhases do
+		self:run(phase)
 	end
 end
 
-local EVENT_CONNECT_METHODS = { "Connect", "on", "connect" }
-
--- This is a modified function from Matter by evaera (https://github.com/evaera)
--- License: Copyright (c) 2021 Eryn L. K., MIT License
--- Source: https://github.com/matter-ecs/matter/blob/main/lib/hooks/useEvent.luau
-function Scheduler:_handleEvent(instance, event)
-	local identifier = getEventIdentifier(instance, event)
-
-	local callback = function()
-		for _, phase in self._eventToPhases[identifier] do
-			for _, system in self._phaseToSystems[phase] do
-				self:runSystem(system)
-			end
-		end
-	end
-
-	local eventInstance = instance
-
-	if typeof(event) == "RBXScriptSignal" or type(event) == "table" then
-		eventInstance = event
-	elseif type(event) == "string" then
-		eventInstance = instance[event]
-	end
-
-	if type(eventInstance) == "function" then
-		self._connectedEvents[identifier] = eventInstance
-
-		return eventInstance(eventInstance, callback)
-	elseif typeof(eventInstance) == "RBXScriptSignal" then
-		self._connectedEvents[identifier] = eventInstance
-
-		return eventInstance:Connect(callback)
-	end
-
-	if type(eventInstance) == "table" then
-		for _, method in EVENT_CONNECT_METHODS do
-			if type(eventInstance[method]) ~= "function" then
-				continue
-			end
-
-			self._connectedEvents[identifier] = eventInstance
-
-			return eventInstance[method](eventInstance, callback)
-		end
-	end
-
-	error(
-		"Couldn't connect to event as no valid connect methods were found! Ensure the passed event has a 'Connect' or an 'on' method!"
+function Scheduler:_insertPhaseAt(phase, index, instance, event)
+	assert(
+		not table.find(self._orderedPhases, phase),
+		"Phase already initialized"
 	)
-end
 
-function Scheduler:_insertPhaseAt(phase, i, instance, event)
-	if table.find(self._phases, phase) then
-		error("Phase initialized more than once")
-	end
+	table.insert(self._orderedPhases, index, phase)
+	self._phaseToSystems[phase] = {}
 
-	table.insert(self._phases, i, phase)
-
-	if not self._phaseToSystems[phase] then
-		self._phaseToSystems[phase] = {}
-	end
-
-	if instance then
-		local validEvent = event and instance[event] or instance
-		validEvent = typeof(validEvent) == "RBXScriptSignal"
-			or (
-				typeof(validEvent) == "table" and validEvent.Connect ~= nil
-				or validEvent.connect ~= nil
-			)
-
-		local identifier = getEventIdentifier(instance, event)
-
-		if not self._eventToPhases[identifier] then
-			self._eventToPhases[identifier] = {}
-		end
-
-		table.insert(self._eventToPhases[identifier], phase)
-
-		if not self._connectedEvents[identifier] then
-			self:_handleEvent(instance, event)
-		end
+	if isValidEvent(instance, event) then
+		self:_schedulePhase(phase, instance, event)
 	end
 end
 
 function Scheduler:insertPhase(phase, instance, event)
-	local mainIndex = table.find(self._phases, self._MAIN_PHASE)
-	self:_insertPhaseAt(phase, mainIndex, instance, event)
+	local index = table.find(self._orderedPhases, Phase.Update)
+	self:_insertPhaseAt(phase, index, instance, event)
 end
 
 function Scheduler:insertPipeline(pipeline, instance, event)
@@ -512,18 +257,12 @@ end
 --- ```
 
 function Scheduler:insert(dependent, instance, event)
-	if typeof(dependent) == "table" then
-		if not dependent._type then
-			error("Unknown dependent passed to Scheduler:insert(unknown)")
-		end
-
-		if dependent._type == "phase" then
-			self:insertPhase(dependent, instance, event)
-		elseif dependent._type == "pipeline" then
-			self:insertPipeline(dependent, instance, event)
-		end
+	if isPhase(dependent) then
+		self:insertPhase(dependent, instance, event)
+	elseif isPipeline(dependent) then
+		self:insertPipeline(dependent, instance, event)
 	else
-		error("Unknown dependent passed to Scheduler:insert(unknown)")
+		error("Unknown dependent passed to Scheduler:insert(unknown, _, _)")
 	end
 
 	return self
@@ -536,7 +275,8 @@ end
 --- @return Scheduler
 ---
 --- Initializes the Phase within the Scheduler, ordering it
---- explicitly after the Phase or Pipeline provided.
+--- explicitly after the Phase, or adding to the end of the
+--- Pipeline provided.
 
 --- @method insertAfter
 --- @within Scheduler
@@ -545,126 +285,107 @@ end
 --- @return Scheduler
 ---
 --- Initializes all Phases within the Pipeline within the Scheduler,
---- ordering the Pipeline explicitly after the Phase or Pipeline provided.
+--- ordering the Pipeline explicitly after the Phase, or adding
+--- to the end of the Pipeline provided.
 
-function Scheduler:insertAfter(dependent, dependency)
-	if typeof(dependency) == "table" then
-		if not dependency._type then
+function Scheduler:insertAfter(dependent, after)
+	if isPhase(after) then
+		local index = table.find(self._orderedPhases, after)
+		assert(
+			index,
+			"Phase never initialized in Scheduler:insertAfter(_, phase)"
+		)
+
+		if isPhase(dependent) then
+			self:_insertPhaseAt(dependent, index + 1)
+		elseif isPipeline(dependent) then
+			for _, phase in dependent._phases do
+				index += 1
+				self:_insertPhaseAt(phase, index)
+			end
+		else
 			error(
-				"Unknown dependency passed to Scheduler:insertAfter(_, unknown)"
+				"Unknown dependent passed in Scheduler:insertAfter(unknown, _)"
 			)
 		end
+	elseif isPipeline(after) then
+		local before = after._phases[#after._phases]
 
-		if dependency._type == "phase" then
-			local i = table.find(self._phases, dependency)
-			assert(i, "Dependency never initialized")
-
-			if typeof(dependent) == "table" then
-				if not dependent._type then
-					error(
-						"Unknown dependency passed to Scheduler:insertAfter(unknown, dependency)"
-					)
-				end
-
-				if dependent._type == "phase" then
-					self:_insertPhaseAt(dependent, i + 1)
-				elseif dependent._type == "pipeline" then
-					for _, phase in dependent._phases do
-						i += 1
-						self:_insertPhaseAt(phase, i)
-					end
-				end
-			end
-		elseif dependency._type == "pipeline" then
-			self:insertAfter(dependent, dependency._phases[#dependency._phases])
+		if isPhase(dependent) then
+			after:insert(dependent)
 		end
+
+		self:insertAfter(dependent, before)
+	else
+		error("Unknown dependency passed in Scheduler:insertAfter(_, unknown)")
 	end
 
 	return self
-end
-
-function Scheduler:_addSystem(system, phase)
-	table.insert(self._phaseToSystems[phase], system)
-	self._systemToPhase[system] = phase
-
-	local name = debug.info(system, "n")
-	if not name or string.len(name) == 0 then
-		name = debug.info(system, "sl")
-	end
-
-	self._systemNames[system] = name
-
-	local hooks = self._hooks[self.Hooks.SystemAdd]
-	local info = {
-		scheduler = self,
-		system = {
-			name = name,
-			phase = phase,
-			fn = system,
-		},
-	}
-
-	for _, hook in hooks do
-		local success, err = pcall(hook, info)
-		if not success then
-			warn("Unexpected error in hook:", err)
-		end
-	end
 end
 
 --- @method addSystems
 --- @within Scheduler
---- @param systems System | { System }
+--- @param systems System
 --- @param phase Phase?
 ---
---- Adds the System(s) to the Scheduler, scheduling them to be ran
+--- Adds the System to the Scheduler, scheduling it to be ran
 --- implicitly within the provided Phase or on the default Main phase.
-function Scheduler:addSystems(systems, phase)
+function Scheduler:addSystem(system, phase)
+	local systemFn = getSystem(system)
+
+	if not systemFn then
+		error("Unknown system passed to Scheduler:addSystem(unknown, phase?)")
+	end
+
+	local systemInfo = {
+		system = systemFn,
+		phase = phase,
+		name = getSystemName(systemFn),
+		logs = {},
+	}
+
 	if not phase then
-		phase = self._MAIN_PHASE
-	end
-
-	if not self._phaseToSystems[phase] then
-		self._phaseToSystems[phase] = {}
-	end
-
-	if type(systems) == "table" then
-		if systems.system then
-			if systems.phase then
-				phase = systems.phase
-			end
-
-			self:_addSystem(systems.system, phase)
+		if type(system) == "table" and system.phase then
+			systemInfo.phase = system.phase
 		else
-			for _, system in systems do
-				if type(system) == "table" then
-					if system.system then
-						if system.phase then
-							phase = system.phase
-						end
-
-						self:_addSystem(system.system, phase)
-					else
-						error(
-							"Unknown system passed to Scheduler:addSystems({ unknown }, phase)"
-						)
-					end
-				elseif type(system) == "function" then
-					self:_addSystem(system, phase)
-				else
-					error(
-						"Unknown system passed to Scheduler:addSystems({ unknown }, phase)"
-					)
-				end
-			end
+			systemInfo.phase = Phase.Update
 		end
-	elseif type(systems) == "function" then
-		self:_addSystem(systems, phase)
-	else
-		error("Unknown system passed to Scheduler:addSystems(unknown, phase)")
 	end
+
+	self._systemInfo[systemFn] = systemInfo
+	table.insert(self._phaseToSystems[systemInfo.phase], systemFn)
+
+	hooks.systemAdd(self, systemInfo)
 
 	return self
+end
+
+--- @method addSystems
+--- @within Scheduler
+--- @param systems { System }
+--- @param phase Phase?
+---
+--- Adds the Systems to the Scheduler, scheduling them to be ran
+--- implicitly within the provided Phase or on the default Main phase.
+function Scheduler:addSystems(systems, phase)
+	if type(systems) ~= "table" then
+		error("Unknown systems passed to Scheduler:addSystems(unknown, phase?)")
+	end
+
+	local foundSystem = false
+
+	for _, system in systems do
+		if getSystem(system) then
+			foundSystem = true
+			self:addSystem(system, phase)
+		end
+	end
+
+	if not foundSystem then
+		error(
+			"Unknown table passed to Scheduler:addSystems({ unknown }, phase?)"
+		)
+	end
 end
 
 --- @method editSystem
@@ -673,22 +394,28 @@ end
 --- @param newPhase Phase
 ---
 --- Changes the Phase that this system is scheduled on.
-function Scheduler:editSystem(system, phase)
-	if not self._phaseToSystems[phase] then
-		error(
-			"Phase never initialized before using Scheduler:editSystem(_, Phase)"
-		)
-	end
+function Scheduler:editSystem(system, newPhase)
+	local systemFn = getSystem(system)
+	local systemInfo = self._systemInfo[systemFn]
+	assert(
+		systemInfo,
+		"Attempt to remove a non-exist system in Scheduler:removeSystem(_)"
+	)
 
-	for _, _phase in self._phases do
-		local i = table.find(self._phaseToSystems[_phase], system)
-		if i then
-			table.remove(self._phaseToSystems[_phase], i)
-			table.insert(self._phaseToSystems[phase], system)
-			self._systemToPhase[system] = phase
-		end
-	end
+	assert(
+		newPhase and self._phaseToSystems[newPhase] ~= nil or true,
+		"Phase never initialized before using Scheduler:editSystem(_, Phase)"
+	)
 
+	local systems = self._phaseToSystems[systemInfo.phase]
+
+	local index = table.find(systems, systemFn)
+	assert(index, "Unable to find system within phase")
+
+	table.remove(systems, index)
+	table.insert(self._phaseToSystems[newPhase], systemFn)
+
+	systemInfo.phase = newPhase
 	return self
 end
 
@@ -698,34 +425,22 @@ end
 ---
 --- Removes the System from the Scheduler.
 function Scheduler:removeSystem(system)
-	local systemPhase = nil
-	for _, phase in self._phases do
-		local i = table.find(self._phaseToSystems[phase], system)
-		if i then
-			systemPhase = phase
-			table.remove(self._phaseToSystems[phase], i)
-			self._systemToPhase[system] = nil
-		end
-	end
+	local systemFn = getSystem(system)
+	local systemInfo = self._systemInfo[systemFn]
+	assert(
+		systemInfo,
+		"Attempt to remove a non-exist system in Scheduler:removeSystem(_)"
+	)
 
-	local hooks = self._hooks[self.Hooks.SystemRemove]
-	local info = {
-		scheduler = self,
-		system = {
-			name = self._systemNames[system],
-			phase = systemPhase,
-			fn = system,
-		},
-	}
+	local systems = self._phaseToSystems[systemInfo.phase]
 
-	for _, hook in hooks do
-		local success, err = pcall(hook, info)
-		if not success then
-			warn("Unexpected error in hook:", err)
-		end
-	end
+	local index = table.find(systems, systemFn)
+	assert(index, "Unable to find system within phase")
 
-	self._systemNames[system] = nil
+	table.remove(systems, index)
+	self._systemInfo[systemFn] = nil
+
+	hooks.systemRemove(self, systemInfo)
 
 	return self
 end
@@ -737,49 +452,32 @@ end
 ---
 --- Replaces the System with a new System.
 function Scheduler:replaceSystem(old, new)
-	local systemPhase = nil
+	local oldSystemFn = getSystem(old)
+	local oldSystemInfo = self._systemInfo[oldSystemFn]
+	assert(
+		oldSystemInfo,
+		"Attempt to replace a non-existent system in Scheduler:replaceSystem(unknown, _)"
+	)
 
-	for _, phase in self._phases do
-		local i = table.find(self._phaseToSystems[phase], old)
-		if i then
-			systemPhase = phase
-			table.remove(self._phaseToSystems[phase], i)
-			table.insert(self._phaseToSystems[phase], i, new)
-			self._systemToPhase[old] = nil
-			self._systemToPhase[new] = phase
-		end
-	end
+	local newSystemFn = getSystem(new)
+	assert(
+		newSystemFn,
+		"Attempt to pass non-system in Scheduler:replaceSystem(_, unknown)"
+	)
 
-	local name = debug.info(new, "n")
-	if not name or string.len(name) == 0 then
-		name = debug.info(new, "sl")
-	end
+	local systems = self._phaseToSystems[oldSystemInfo.phase]
 
-	self._systemNames[new] = name
+	local index = table.find(systems, oldSystemFn)
+	assert(index, "Unable to find system within phase")
 
-	local hooks = self._hooks[self.Hooks.SystemAdd]
-	local info = {
-		scheduler = self,
-		new = {
-			name = name,
-			phase = systemPhase,
-			fn = new,
-		},
-		old = {
-			name = self._systemNames[old],
-			phase = systemPhase,
-			fn = old,
-		},
-	}
+	table.remove(systems, index)
+	table.insert(systems, index, newSystemFn)
 
-	for _, hook in hooks do
-		local success, err = pcall(hook, info)
-		if not success then
-			warn("Unexpected error in hook:", err)
-		end
-	end
+	local copy = table.clone(oldSystemInfo)
+	hooks.systemReplace(self, copy, oldSystemInfo)
 
-	self._systemNames[old] = nil
+	oldSystemInfo.system = newSystemFn
+	oldSystemInfo.name = getSystemName(newSystemFn)
 
 	return self
 end
@@ -811,49 +509,21 @@ end
 --- This Run Condition will be applied to the Phases themselves.
 
 function Scheduler:setRunCondition(dependent, fn)
-	if type(dependent) == "table" and dependent.system then
-		dependent = dependent.system
-	elseif
-		type(dependent) == "table"
-		and dependent._type
-		and dependent._type == "pipeline"
-	then
-		for _, phase in dependent._phases do
-			self:setRunCondition(phase, fn)
-		end
+	local system = getSystem(dependent)
+	if system then
+		dependent = system
 	end
 
-	self._runIfConditions[dependent] = fn
+	assert(
+		system or isPhase(dependent) or isPipeline(dependent),
+		"Attempt to pass unknown dependent into Scheduler:setRunCondition(unknown, _)"
+	)
 
+	self._runIfConditions[dependent] = fn
 	return self
 end
 
---- @function new
---- @within Scheduler
---- @param args U...
----
---- Creates a new Scheduler, the args passed will be passed to
---- any System anytime it is ran by the Scheduler.
-function Scheduler.new(...)
-	local self = {}
-
-	local Heartbeat = RunService.Heartbeat
-
-	self._MAIN_PHASE = Phase.Update
-	self._heartbeat = Heartbeat
-	self._startupFinished = false
-	self._vargs = table.pack(...)
-	self._hooks = {}
-	self._phases = {}
-	self._phaseToSystems = {}
-	self._systemToPhase = {}
-	self._eventToPhases = {}
-	self._runIfConditions = {}
-	self._connectedEvents = {}
-	self._systemNames = {}
-
-	setmetatable(self, Scheduler)
-
+function Scheduler:_addBuiltins()
 	local i = 0
 
 	for _, phase in Pipeline.Startup._phases do
@@ -878,7 +548,124 @@ function Scheduler.new(...)
 		self:_insertPhaseAt(Phase[event], i, RunService, event)
 	end
 
-	for _, hookName in self.Hooks do
+	local startupHasRan = {}
+
+	self:setRunCondition(Pipeline.Startup, function()
+		local phases = Pipeline.Startup._phases
+		local hasRan = startupHasRan[phases[#phases]]
+
+		if not hasRan then
+			startupHasRan[phases[#phases]] = true
+		end
+
+		return not hasRan
+	end)
+
+	for _, phase in Pipeline.Startup._phases do
+		self:setRunCondition(phase, function()
+			local hasRan = startupHasRan[phase]
+
+			if not hasRan then
+				startupHasRan[phase] = true
+			end
+
+			return not hasRan
+		end)
+	end
+end
+
+local EVENT_CONNECT_METHODS = { "Connect", "On", "on", "connect" }
+
+-- This is a modified function from Matter by evaera (https://github.com/evaera)
+-- License: Copyright (c) 2021 Eryn L. K., MIT License
+-- Source: https://github.com/matter-ecs/matter/blob/main/lib/hooks/useEvent.luau
+function Scheduler:_scheduleEvent(instance, event)
+	local identifier = getEventIdentifier(instance, event)
+
+	local callback = function()
+		for _, phase in self._eventToPhases[identifier] do
+			for _, system in self._phaseToSystems[phase] do
+				self:runSystem(system)
+			end
+		end
+	end
+
+	local eventInstance = instance
+
+	if typeof(event) == "RBXScriptSignal" or type(event) == "table" then
+		eventInstance = event
+	elseif type(event) == "string" then
+		eventInstance = instance[event]
+	end
+
+	if type(eventInstance) == "function" then
+		self._connectedEvents[identifier] = eventInstance
+
+		return eventInstance(eventInstance, callback)
+	elseif typeof(eventInstance) == "RBXScriptSignal" then
+		self._connectedEvents[identifier] = eventInstance
+
+		return eventInstance:Connect(callback)
+	end
+
+	if type(eventInstance) == "table" then
+		for _, method in EVENT_CONNECT_METHODS do
+			if type(eventInstance[method]) ~= "function" then
+				continue
+			end
+
+			self._connectedEvents[identifier] = eventInstance
+			return eventInstance[method](eventInstance, callback)
+		end
+	end
+
+	error(
+		"Couldn't connect to event as no valid connect methods were found! Ensure the passed event has a 'Connect' or an 'on' method!"
+	)
+end
+
+function Scheduler:_schedulePhase(phase, instance, event)
+	local identifier = getEventIdentifier(instance, event)
+
+	if not self._eventToPhases[identifier] then
+		self._eventToPhases[identifier] = {}
+	end
+
+	table.insert(self._eventToPhases[identifier], phase)
+	if not self._connectedEvents[identifier] then
+		self:_scheduleEvent(instance, event)
+	end
+end
+
+--- @function new
+--- @within Scheduler
+--- @param args U...
+---
+--- Creates a new Scheduler, the args passed will be passed to
+--- any System anytime it is ran by the Scheduler.
+function Scheduler.new(...)
+	local self = {}
+
+	self._hooks = {}
+
+	self._vargs = { ... }
+
+	self._orderedPhases = {}
+	self._orderedPipelines = {}
+
+	self._eventToPhases = {}
+	self._connectedEvents = {}
+
+	self._phaseToSystems = {}
+	self._systemInfo = {}
+
+	self._runIfConditions = {}
+
+	setmetatable(self, Scheduler)
+
+	self:_addBuiltins()
+
+	for _, hookName in hooks.Hooks do
 		if not self._hooks[hookName] then
 			self._hooks[hookName] = {}
 		end
@@ -887,8 +674,4 @@ function Scheduler.new(...)
 	return self
 end
 
-return {
-	Phase = Phase,
-	Pipeline = Pipeline,
-	Scheduler = Scheduler,
-}
+return Scheduler

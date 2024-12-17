@@ -3,7 +3,7 @@ local topoRuntime = require(script.topoRuntime) :: any
 type SystemInfo = {
 	name: string,
 	phase: any,
-	fn: (...any) -> ...any,
+	system: (...any) -> ...any,
 }
 
 type HookArgs = {
@@ -22,7 +22,7 @@ type SystemsAddRemove = {
 	system: SystemInfo,
 }
 
-type SystemsEdit = {
+type SystemsReplace = {
 	scheduler: any,
 	new: SystemInfo,
 	old: SystemInfo,
@@ -67,7 +67,7 @@ function Plugin:build(scheduler: any)
 	scheduler:_addHook(
 		scheduler.Hooks.SystemAdd,
 		function(info: SystemsAddRemove)
-			local systemFn = info.system.fn
+			local systemFn = info.system.system
 
 			if not scheduler._systemState[systemFn] then
 				scheduler._systemState[systemFn] = {}
@@ -82,25 +82,29 @@ function Plugin:build(scheduler: any)
 	scheduler:_addHook(
 		scheduler.Hooks.SystemRemove,
 		function(info: SystemsAddRemove)
-			local systemFn = info.system.fn
+			local systemFn = info.system.system
 
 			scheduler._systemState[systemFn] = nil
 			scheduler._systemLogs[systemFn] = nil
 		end
 	)
 
-	scheduler:_addHook(scheduler.Hooks.SystemEdit, function(info: SystemsEdit)
-		local newSystem = info.new.fn
-		local oldSystem = info.old.fn
+	scheduler:_addHook(
+		scheduler.Hooks.SystemReplace,
+		function(info: SystemsReplace)
+			local newSystem = info.new.system
+			local oldSystem = info.old.system
 
-		scheduler._systemState[newSystem] = scheduler._systemState[oldSystem]
-		scheduler._systemLogs[newSystem] = scheduler._systemLogs[oldSystem]
-		scheduler._systemState[oldSystem] = nil
-		scheduler._systemLogs[oldSystem] = nil
-	end)
+			scheduler._systemState[newSystem] =
+				scheduler._systemState[oldSystem]
+			scheduler._systemLogs[newSystem] = scheduler._systemLogs[oldSystem]
+			scheduler._systemState[oldSystem] = nil
+			scheduler._systemLogs[oldSystem] = nil
+		end
+	)
 
-	scheduler:_addHook(scheduler.Hooks.SystemCallOuter, function(args: HookArgs)
-		local systemFn = args.system.fn
+	scheduler:_addHook(scheduler.Hooks.OuterSystemCall, function(args: HookArgs)
+		local systemFn = args.system.system
 		local phase = args.system.phase
 
 		local details = phaseDetails[phase]

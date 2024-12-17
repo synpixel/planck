@@ -1,8 +1,6 @@
-local Planck = require("@Project/Scheduler")
-
-local Phase = Planck.Phase :: any
-local Pipeline = Planck.Pipeline :: any
-local Scheduler = Planck.Scheduler :: any
+local Phase = require("@Project/Phase") :: any
+local Pipeline = require("@Project/Pipeline") :: any
+local Scheduler = require("@Project/Scheduler") :: any
 
 type SystemFn<U...> = ((U...) -> any) | ((U...) -> ())
 
@@ -65,9 +63,15 @@ type Plugin<U...> = {
 type Scheduler<U...> = {
 	addPlugin: (self: Scheduler<U...>, plugin: Plugin<U...>) -> Scheduler<U...>,
 
+	addSystem: (
+		self: Scheduler<U...>,
+		system: System<U...>,
+		phase: Phase?
+	) -> Scheduler<U...>,
+
 	addSystems: (
 		self: Scheduler<U...>,
-		systems: System<U...> | { System<U...> },
+		systems: { System<U...> },
 		phase: Phase?
 	) -> Scheduler<U...>,
 

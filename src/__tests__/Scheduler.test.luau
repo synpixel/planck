@@ -20,9 +20,9 @@ describe("scheduler", function()
 			local myScheduler = Scheduler.new():insert(myPhase)
 
 			local mainIndex =
-				table.find(myScheduler._phases, myScheduler._MAIN_PHASE)
+				table.find(myScheduler._orderedPhases, Phase.Update)
 
-			expect(myScheduler._phases[mainIndex - 1]).toBe(myPhase)
+			expect(myScheduler._orderedPhases[mainIndex - 1]).toBe(myPhase)
 			expect(myScheduler._phaseToSystems[myPhase]).toBeTruthy()
 		end)
 
@@ -33,9 +33,9 @@ describe("scheduler", function()
 				:insert(myPhase, RunService, "Heartbeat")
 
 			local mainIndex =
-				table.find(myScheduler._phases, myScheduler._MAIN_PHASE)
+				table.find(myScheduler._orderedPhases, Phase.Update)
 
-			expect(myScheduler._phases[mainIndex - 1]).toBe(myPhase)
+			expect(myScheduler._orderedPhases[mainIndex - 1]).toBe(myPhase)
 			expect(myScheduler._phaseToSystems[myPhase]).toBeTruthy()
 
 			local identifier = `{RunService}@Heartbeat`
@@ -56,10 +56,10 @@ describe("scheduler", function()
 			local myScheduler = Scheduler.new():insert(myPipeline)
 
 			local mainIndex =
-				table.find(myScheduler._phases, myScheduler._MAIN_PHASE)
+				table.find(myScheduler._orderedPhases, Phase.Update)
 
-			expect(myScheduler._phases[mainIndex - 2]).toBe(myPhase)
-			expect(myScheduler._phases[mainIndex - 1]).toBe(otherPhase)
+			expect(myScheduler._orderedPhases[mainIndex - 2]).toBe(myPhase)
+			expect(myScheduler._orderedPhases[mainIndex - 1]).toBe(otherPhase)
 			expect(myScheduler._phaseToSystems[myPhase]).toBeTruthy()
 			expect(myScheduler._phaseToSystems[otherPhase]).toBeTruthy()
 		end)
@@ -75,10 +75,10 @@ describe("scheduler", function()
 				:insert(myPipeline, RunService, "Heartbeat")
 
 			local mainIndex =
-				table.find(myScheduler._phases, myScheduler._MAIN_PHASE)
+				table.find(myScheduler._orderedPhases, Phase.Update)
 
-			expect(myScheduler._phases[mainIndex - 2]).toBe(myPhase)
-			expect(myScheduler._phases[mainIndex - 1]).toBe(otherPhase)
+			expect(myScheduler._orderedPhases[mainIndex - 2]).toBe(myPhase)
+			expect(myScheduler._orderedPhases[mainIndex - 1]).toBe(otherPhase)
 			expect(myScheduler._phaseToSystems[myPhase]).toBeTruthy()
 			expect(myScheduler._phaseToSystems[otherPhase]).toBeTruthy()
 
@@ -104,11 +104,11 @@ describe("scheduler", function()
 				:insertAfter(phaseTwo, phaseOne)
 
 			local mainIndex =
-				table.find(myScheduler._phases, myScheduler._MAIN_PHASE)
+				table.find(myScheduler._orderedPhases, Phase.Update)
 
-			expect(myScheduler._phases[mainIndex - 3]).toBe(phaseOne)
-			expect(myScheduler._phases[mainIndex - 2]).toBe(phaseTwo)
-			expect(myScheduler._phases[mainIndex - 1]).toBe(phaseThree)
+			expect(myScheduler._orderedPhases[mainIndex - 3]).toBe(phaseOne)
+			expect(myScheduler._orderedPhases[mainIndex - 2]).toBe(phaseTwo)
+			expect(myScheduler._orderedPhases[mainIndex - 1]).toBe(phaseThree)
 
 			expect(myScheduler._phaseToSystems[phaseOne]).toBeTruthy()
 			expect(myScheduler._phaseToSystems[phaseTwo]).toBeTruthy()
@@ -131,11 +131,11 @@ describe("scheduler", function()
 				:insertAfter(pipelineThree, pipelineOne)
 
 			local mainIndex =
-				table.find(myScheduler._phases, myScheduler._MAIN_PHASE)
-			expect(myScheduler._phases[mainIndex - 4]).toBe(phaseOne)
-			expect(myScheduler._phases[mainIndex - 3]).toBe(phaseTwo)
-			expect(myScheduler._phases[mainIndex - 2]).toBe(phaseThree)
-			expect(myScheduler._phases[mainIndex - 1]).toBe(phaseFour)
+				table.find(myScheduler._orderedPhases, Phase.Update)
+			expect(myScheduler._orderedPhases[mainIndex - 4]).toBe(phaseOne)
+			expect(myScheduler._orderedPhases[mainIndex - 3]).toBe(phaseTwo)
+			expect(myScheduler._orderedPhases[mainIndex - 2]).toBe(phaseThree)
+			expect(myScheduler._orderedPhases[mainIndex - 1]).toBe(phaseFour)
 
 			expect(myScheduler._phaseToSystems[phaseOne]).toBeTruthy()
 			expect(myScheduler._phaseToSystems[phaseTwo]).toBeTruthy()
@@ -156,7 +156,7 @@ describe("scheduler", function()
 		local myPhase = Phase.new("myPhase")
 		local myScheduler = Scheduler.new(1, 2, 3)
 			:insert(myPhase)
-			:addSystems(system, myPhase)
+			:addSystem(system, myPhase)
 			:setRunCondition(myPhase, function()
 				return bool
 			end)
@@ -182,37 +182,27 @@ describe("scheduler", function()
 
 		local myScheduler = Scheduler.new(1, 2, 3)
 			:insert(myPipeline)
-			:addSystems(system, myPhase)
+			:addSystem(system, myPhase)
 			:setRunCondition(myPipeline, function()
 				return bool
 			end)
 
-		myScheduler:runAll()
+		myScheduler:run(myPipeline)
 
 		bool = false
-		myScheduler:runAll() -- Expect system to not run
+		myScheduler:run(myPipeline) -- Expect system to not run
 	end)
 
 	describe("startup systems", function()
 		test("should run once", function()
 			expect.assertions(1)
 
-			local myScheduler = Scheduler.new(1, 2, 3):addSystems(function(...)
+			local myScheduler = Scheduler.new(1, 2, 3):addSystem(function(...)
 				expect({ ... }).toEqual({ 1, 2, 3 })
 			end, Phase.Startup)
 
 			myScheduler:runAll()
 			myScheduler:runAll()
-		end)
-
-		test("can be ran", function()
-			expect.assertions(2)
-
-			local myScheduler = Scheduler.new(1, 2, 3):addSystems(function(...)
-				expect({ ... }).toEqual({ 1, 2, 3 })
-			end, Phase.Startup)
-
-			myScheduler:run(Phase.Startup)
 		end)
 	end)
 end)

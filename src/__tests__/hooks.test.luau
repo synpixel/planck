@@ -21,7 +21,7 @@ describe("topoRuntime", function()
 		local myScheduler = Scheduler.new(1, 2, 3)
 			:addPlugin(plugin)
 			:insert(myPhase)
-			:addSystems(function()
+			:addSystem(function()
 				expect(useDeltaTime()).toBeTruthy()
 			end, myPhase)
 
@@ -39,7 +39,7 @@ describe("topoRuntime", function()
 		local myScheduler = Scheduler.new(1, 2, 3)
 			:addPlugin(plugin)
 			:insert(myPhase)
-			:addSystems(function()
+			:addSystem(function()
 				if useThrottle(1) then
 					expect(true).toBe(true)
 				end

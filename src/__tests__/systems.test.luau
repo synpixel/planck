@@ -16,7 +16,7 @@ describe("systems", function()
 		local myPhase = Phase.new("myPhase")
 		local myScheduler = Scheduler.new(1, 2, 3)
 			:insert(myPhase)
-			:addSystems(function(...)
+			:addSystem(function(...)
 				expect({ ... }).toEqual({ 1, 2, 3 })
 			end, myPhase)
 
@@ -32,7 +32,7 @@ describe("systems", function()
 
 		local myPhase = Phase.new("myPhase")
 		local myScheduler =
-			Scheduler.new(1, 2, 3):insert(myPhase):addSystems(systemA, myPhase)
+			Scheduler.new(1, 2, 3):insert(myPhase):addSystem(systemA, myPhase)
 
 		myScheduler:runAll()
 
@@ -55,7 +55,7 @@ describe("systems", function()
 
 		local myPhase = Phase.new("myPhase")
 		local myScheduler =
-			Scheduler.new(1, 2, 3):insert(myPhase):addSystems(systemA, myPhase)
+			Scheduler.new(1, 2, 3):insert(myPhase):addSystem(systemA, myPhase)
 
 		myScheduler:runAll()
 
@@ -78,7 +78,7 @@ describe("systems", function()
 
 		local myPhase = Phase.new("myPhase")
 		local myScheduler =
-			Scheduler.new(1, 2, 3):insert(myPhase):addSystems(systemA, myPhase)
+			Scheduler.new(1, 2, 3):insert(myPhase):addSystem(systemA, myPhase)
 
 		myScheduler:runAll()
 
@@ -99,7 +99,7 @@ describe("systems", function()
 		}
 
 		local myScheduler =
-			Scheduler.new(1, 2, 3):insert(myPhase):addSystems(system)
+			Scheduler.new(1, 2, 3):insert(myPhase):addSystem(system)
 
 		myScheduler:run(myPhase)
 	end)
@@ -116,7 +116,7 @@ describe("systems", function()
 		local myPhase = Phase.new("myPhase")
 		local myScheduler = Scheduler.new(1, 2, 3)
 			:insert(myPhase)
-			:addSystems(system, myPhase)
+			:addSystem(system, myPhase)
 			:setRunCondition(system, function()
 				return bool
 			end)
@@ -125,5 +125,22 @@ describe("systems", function()
 
 		bool = false
 		myScheduler:runAll() -- Expect system to not run
+	end)
+
+	test("yield", function()
+		expect.assertions(1)
+
+		local system = function()
+			wait(5)
+		end
+
+		local myPhase = Phase.new("myPhase")
+		local myScheduler =
+			Scheduler.new(1, 2, 3):insert(myPhase):addSystem(system, myPhase)
+
+		myScheduler:runAll()
+		expect(
+			table.find(myScheduler._systemInfo[system].logs, "System yielded")
+		).toBeTruthy()
 	end)
 end)

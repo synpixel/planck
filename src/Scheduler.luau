@@ -15,6 +15,10 @@ local isPipeline = utils.isPipeline
 local isValidEvent = utils.isValidEvent
 local getEventIdentifier = utils.getEventIdentifier
 
+-- Recent errors in Planks itself
+local recentLogs = {}
+local timeLastLogged = os.clock()
+
 --- @type SystemFn ((U...) -> any)
 --- @within Scheduler
 
@@ -53,6 +57,36 @@ function Scheduler:_addHook(hook, fn)
 	table.insert(self._hooks[hook], fn)
 end
 
+-- Inspiration from https://github.com/matter-ecs/matter <3
+function Scheduler:_handleLogs(systemInfo)
+	if not systemInfo.timeLastLogged then
+		systemInfo.timeLastLogged = os.clock()
+	end
+
+	if not systemInfo.recentLogs then
+		systemInfo.recentLogs = {}
+	end
+
+	if os.clock() - systemInfo.timeLastLogged > 10 then
+		systemInfo.timeLastLogged = os.clock()
+		systemInfo.recentLogs = {}
+	end
+
+	local name = debug.info(systemInfo.system, "n")
+
+	for _, logMessage in systemInfo.logs do
+		if not systemInfo.recentLogs[logMessage] then
+			task.spawn(error, logMessage, 0)
+			warn(
+				`Planck: Error occurred in system{string.len(name) > 0 and ` '{name}'` or ""}, this error will be ignored for 10 seconds`
+			)
+			systemInfo.recentLogs[logMessage] = true
+		end
+	end
+
+	table.clear(systemInfo.logs)
+end
+
 function Scheduler:runSystem(system)
 	local runIf = self._runIfConditions[system]
 	if runIf and runIf(table.unpack(self._vargs)) == false then
@@ -74,18 +108,24 @@ function Scheduler:runSystem(system)
 		coroutine.resume(self._thread)
 	end
 
+	local didYield = false
+
 	local function systemCall()
 		local function noYield()
 			local success, err = coroutine.resume(self._thread, function()
 				system(table.unpack(self._vargs))
 			end)
 
-			if self._yielded then
-				table.insert(systemInfo.logs, "System yielded")
+			if not success then
+				didYield = true
+				table.insert(systemInfo.logs, err)
+				return
 			end
 
-			if not success then
-				table.insert(systemInfo.logs, `System errored: {err}`)
+			if self._yielded then
+				didYield = true
+				local trace, line = debug.info(systemInfo.system, "sl")
+				table.insert(systemInfo.logs, `{trace}:{line}: System yielded`)
 			end
 		end
 
@@ -100,13 +140,36 @@ function Scheduler:runSystem(system)
 		hooks.systemCall(self, "OuterSystemCall", systemInfo, inner)
 	end
 
-	local success, err: string? = pcall(outer)
-	if not success then
-		table.insert(
-			systemInfo.logs,
-			`System errored while Running Hooks: {err}`
-		)
+	if os.clock() - timeLastLogged > 10 then
+		timeLastLogged = os.clock()
+		recentLogs = {}
 	end
+
+	local success, err: string? = pcall(outer)
+	if not success and not recentLogs[err] then
+		task.spawn(error, err, 0)
+		warn(
+			`Planck: Error occurred while running hooks, this error will be ignored for 10 seconds`
+		)
+		recentLogs[err] = true
+	end
+
+	if didYield then
+		coroutine.close(self._thread)
+
+		self._thread = coroutine.create(function()
+			while true do
+				local fn = coroutine.yield()
+				self._yielded = true
+				fn()
+				self._yielded = false
+			end
+		end)
+
+		coroutine.resume(self._thread)
+	end
+
+	self:_handleLogs(systemInfo)
 end
 
 function Scheduler:runPhase(phase)

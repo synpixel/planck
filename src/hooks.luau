@@ -55,6 +55,13 @@ local function systemCall(scheduler, hookName, systemInfo, nextFn)
 				system = systemInfo,
 				nextFn = nextFn,
 			})
+
+			if not nextFn then
+				local source, line = debug.info(hook, "sl")
+				warn(
+					`{source}:{line}: Expected 'SystemCall' hook to return a function`
+				)
+			end
 		end
 	end
 

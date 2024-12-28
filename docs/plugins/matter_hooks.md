@@ -36,3 +36,18 @@ local scheduler = scheduler.new()
         end
     end)
 ```
+
+## Using with Matter
+
+To use Matter's Hooks in Matter, you still need to use this Plugin.
+
+By default, the Plugin will look for the official Matter library in `ReplicatedStorage/Packages/_Index`.
+This should work if you're installing from Wally. If you're not, you can pass in a reference to the
+Matter library in the Plugin constructor.
+
+```lua
+local hooksPlugin = MatterHooks.new(ReplicatedStorage.Matter)
+
+local scheduler = scheduler.new()
+    :addPlugin(hooksPlugin)
+```

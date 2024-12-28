@@ -1,4 +1,4 @@
-local topoRuntime = require(script.topoRuntime) :: any
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 type SystemInfo = {
 	name: string,
@@ -28,6 +28,75 @@ type SystemsReplace = {
 	old: SystemInfo,
 }
 
+type Plugin = {
+	build: (self: Plugin, scheduler: any) -> (),
+	new: (module: ModuleScript?) -> Plugin,
+}
+
+type ConnectionObject = {
+	Disconnect: (() -> ())?,
+	Destroy: (() -> ())?,
+	disconnect: (() -> ())?,
+	destroy: (() -> ())?,
+} | () -> ()
+
+type CustomEvent = {
+	Connect: (...any) -> ConnectionObject,
+	[any]: any,
+} | {
+	on: (...any) -> ConnectionObject,
+	[any]: any,
+} | {
+	connect: (...any) -> ConnectionObject,
+	[any]: any,
+}
+
+type Library = {
+	useDeltaTime: () -> number,
+	useEvent: (
+		instance: Instance | { [string]: CustomEvent } | CustomEvent,
+		event: string | RBXScriptSignal | CustomEvent
+	) -> () -> (number, ...any),
+	useThrottle: (seconds: number, discriminator: any?) -> boolean,
+
+	Plugin: Plugin,
+}
+
+local topoRuntime
+local export = {} :: any
+
+local hooks = {
+	"useDeltaTime",
+	"useEvent",
+	"useThrottle",
+}
+
+local function setHooks(package)
+	topoRuntime = require(package:FindFirstChild("topoRuntime", true)) :: any
+
+	for _, hook in hooks do
+		local module = package:FindFirstChild(hook, true)
+		export[hook] = require(module) :: any
+	end
+end
+
+-- When using Matter, we must use the topoRuntime in the library
+if ReplicatedStorage:FindFirstChild("Packages") then
+	for _, package in ReplicatedStorage.Packages._Index:GetChildren() do
+		if
+			string.find(package.Name, "matter-ecs_matter")
+			or string.find(package.Name, "evaera_matter")
+		then
+			setHooks(package)
+			break
+		end
+	end
+end
+
+if not topoRuntime then
+	setHooks(script)
+end
+
 local Plugin = {}
 Plugin.__index = Plugin
 
@@ -42,6 +111,44 @@ function Plugin:build(scheduler: any)
 
 	local phaseDetails = {}
 
+	for _, phase in scheduler._orderedPhases do
+		if not phaseDetails[phase] then
+			phaseDetails[phase] = {
+				lastTime = os.clock(),
+				generation = false,
+			}
+		end
+
+		local details = phaseDetails[phase]
+
+		details.currentTime = os.clock()
+		details.deltaTime = details.currentTime - details.lastTime
+		details.lastTime = details.currentTime
+
+		details.generation = not details.generation
+	end
+
+	scheduler:_addHook(scheduler.Hooks.PhaseAdd, function(args: PhaseBeganArgs)
+		local phase = args.phase
+
+		if not phaseDetails[phase] then
+			phaseDetails[phase] = {
+				currentTime = os.clock(),
+				deltaTime = 0,
+				lastTime = os.clock(),
+				generation = false,
+			}
+		end
+
+		local details = phaseDetails[phase]
+
+		details.currentTime = os.clock()
+		details.deltaTime = details.currentTime - details.lastTime
+		details.lastTime = details.currentTime
+
+		details.generation = not details.generation
+	end)
+
 	scheduler:_addHook(
 		scheduler.Hooks.PhaseBegan,
 		function(args: PhaseBeganArgs)
@@ -49,6 +156,8 @@ function Plugin:build(scheduler: any)
 
 			if not phaseDetails[phase] then
 				phaseDetails[phase] = {
+					currentTime = os.clock(),
+					deltaTime = 0,
 					lastTime = os.clock(),
 					generation = false,
 				}
@@ -119,62 +228,25 @@ function Plugin:build(scheduler: any)
 				},
 				currentSystem = systemFn,
 			}, function()
-				debug.profilebegin(`system: {args.system.name}`)
 				local thread = coroutine.create(function()
 					args.nextFn()
 				end)
 
 				local _startTime = os.clock()
 				local _success, _err = coroutine.resume(thread)
-
-				debug.profileend()
 			end)
 		end
 	end)
 end
 
-function Plugin.new()
+function Plugin.new(module)
+	if module then
+		setHooks(module)
+	end
+
 	return setmetatable({}, Plugin)
 end
 
-type Plugin = {
-	build: (self: Plugin, scheduler: any) -> (),
-	new: () -> Plugin,
-}
+export.Plugin = Plugin
 
-type ConnectionObject = {
-	Disconnect: (() -> ())?,
-	Destroy: (() -> ())?,
-	disconnect: (() -> ())?,
-	destroy: (() -> ())?,
-} | () -> ()
-
-type CustomEvent = {
-	Connect: (...any) -> ConnectionObject,
-	[any]: any,
-} | {
-	on: (...any) -> ConnectionObject,
-	[any]: any,
-} | {
-	connect: (...any) -> ConnectionObject,
-	[any]: any,
-}
-
-type Library = {
-	useDeltaTime: () -> number,
-	useEvent: (
-		instance: Instance | { [string]: CustomEvent } | CustomEvent,
-		event: string | RBXScriptSignal | CustomEvent
-	) -> () -> (number, ...any),
-	useThrottle: (seconds: number, discriminator: any?) -> boolean,
-
-	Plugin: Plugin,
-}
-
-return {
-	useDeltaTime = require("./hooks/useDeltaTime"),
-	useEvent = require("./hooks/useDeltaTime"),
-	useThrottle = require("./hooks/useDeltaTime"),
-
-	Plugin = Plugin :: any,
-} :: Library
+return export :: Library

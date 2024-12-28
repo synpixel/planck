@@ -69,6 +69,7 @@ local hooks = {
 	"useDeltaTime",
 	"useEvent",
 	"useThrottle",
+	"log",
 }
 
 local function setHooks(package)

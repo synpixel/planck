@@ -37,7 +37,8 @@ const FEATURES = [
 					the Scheduler.
 				</p>
 				<p>
-					Planck features two Plugins for the <Link to="/docs/plugins/jabby">Jabby Debugger</Link> and{" "}
+					Planck features two Plugins for the <Link to="/docs/plugins/jabby">Jabby Debugger</Link>,{" "}
+					<Link to="/docs/plugins/matter_debugger">Matter Debugger</Link>, and{" "}
 					<Link to="/docs/plugins/matter_hooks">Matter Hooks</Link>
 				</p>
 				<div class="card__footer">

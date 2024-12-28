@@ -119,6 +119,7 @@ function Scheduler:runSystem(system)
 			if not success then
 				didYield = true
 				table.insert(systemInfo.logs, err)
+				hooks.systemError(self, systemInfo, err)
 				return
 			end
 
@@ -126,6 +127,11 @@ function Scheduler:runSystem(system)
 				didYield = true
 				local trace, line = debug.info(systemInfo.system, "sl")
 				table.insert(systemInfo.logs, `{trace}:{line}: System yielded`)
+				hooks.systemError(
+					self,
+					systemInfo,
+					`{trace}:{line}: System yielded`
+				)
 			end
 		end
 
@@ -150,6 +156,11 @@ function Scheduler:runSystem(system)
 		task.spawn(error, err, 0)
 		warn(
 			`Planck: Error occurred while running hooks, this error will be ignored for 10 seconds`
+		)
+		hooks.systemError(
+			self,
+			systemInfo,
+			`Error occurred while running hooks: {err}`
 		)
 		recentLogs[err] = true
 	end
@@ -256,6 +267,8 @@ function Scheduler:_insertPhaseAt(phase, index, instance, event)
 
 	table.insert(self._orderedPhases, index, phase)
 	self._phaseToSystems[phase] = {}
+
+	hooks.phaseAdd(self, phase)
 
 	if isValidEvent(instance, event) then
 		self:_schedulePhase(phase, instance, event)
@@ -726,13 +739,13 @@ function Scheduler.new(...)
 
 	setmetatable(self, Scheduler)
 
-	self:_addBuiltins()
-
 	for _, hookName in hooks.Hooks do
 		if not self._hooks[hookName] then
 			self._hooks[hookName] = {}
 		end
 	end
+
+	self:_addBuiltins()
 
 	return self
 end

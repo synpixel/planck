@@ -8,6 +8,9 @@
       },
       "Packages": {
         "$className": "Folder",
+        "_Index": {
+          "$className": "Folder"
+        },
         "Project": {
           "$path": "dist/src"
         },

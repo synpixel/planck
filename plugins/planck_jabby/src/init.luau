@@ -36,12 +36,12 @@ function Plugin:build(scheduler: any)
 
 	local systemToId = {}
 
-	for system, systemName in scheduler._systemNames do
+	for systemFn, systemInfo in scheduler._systemInfo do
 		local id = jabbyScheduler:register_system({
-			name = systemName,
+			name = systemInfo.name,
 		})
 
-		systemToId[system] = id
+		systemToId[systemFn] = id
 	end
 
 	scheduler:_addHook(

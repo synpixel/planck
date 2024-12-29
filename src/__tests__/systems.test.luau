@@ -138,9 +138,13 @@ describe("systems", function()
 		local myScheduler =
 			Scheduler.new(1, 2, 3):insert(myPhase):addSystem(system, myPhase)
 
+		local err
+
+		myScheduler:_addHook(myScheduler.Hooks.SystemError, function(args)
+			err = args.error
+		end)
+
 		myScheduler:runAll()
-		expect(
-			table.find(myScheduler._systemInfo[system].logs, "System yielded")
-		).toBeTruthy()
+		expect(err).toEqual(expect.stringContaining("System yielded"))
 	end)
 end)

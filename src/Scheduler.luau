@@ -555,6 +555,9 @@ function Scheduler:replaceSystem(old, new)
 	oldSystemInfo.system = newSystemFn
 	oldSystemInfo.name = getSystemName(newSystemFn)
 
+	self._systemInfo[newSystemFn] = self._systemInfo[oldSystemFn]
+	self._systemInfo[oldSystemFn] = nil
+
 	return self
 end
 

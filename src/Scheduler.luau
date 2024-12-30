@@ -663,9 +663,7 @@ function Scheduler:_scheduleEvent(instance, event)
 
 	local callback = function()
 		for _, phase in self._eventToPhases[identifier] do
-			for _, system in self._phaseToSystems[phase] do
-				self:runSystem(system)
-			end
+			self:runPhase(phase)
 		end
 	end
 

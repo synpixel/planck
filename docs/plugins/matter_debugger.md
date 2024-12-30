@@ -11,7 +11,7 @@ You can install it with,
 
 ```toml
 [dependencies]
-DebuggerPlugin = "yetanotherclown/planck-matter-debugger@0.1.0"
+DebuggerPlugin = "yetanotherclown/planck-matter-debugger@0.1.0-rc.1"
 ```
 
 Then to set it up,

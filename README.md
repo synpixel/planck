@@ -8,10 +8,7 @@ An Agnostic Scheduler, inspired by Bevy Schedules and Flecs Pipelines and Phases
 
 > [!IMPORTANT]  
 > The Planck Scheduler and it's plugins are currently in development!
-> This means that they are not uploaded to Wally just yet.
->
-> v0.1.0 of this library will release when Roblox TypeScript typings are
-> added as well as a Plugin to support the Matter Debugger.
+> You can find a release candidate under `yetanotherclown/planck@0.1.0-rc.1`
 
 ## Installation
 
@@ -19,7 +16,7 @@ You can install Planck with Wally
 
 ```toml
 [dependencies]
-Planck = "yetanotherclown/planck@0.1.0"
+Planck = "yetanotherclown/planck@0.1.0-rc.1"
 ```
 
 ## Basics

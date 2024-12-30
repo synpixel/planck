@@ -12,7 +12,7 @@ You can install Planck with Wally
 
 ```toml
 [dependencies]
-Planck = "yetanotherclown/planck@0.1.0"
+Planck = "yetanotherclown/planck@0.1.0-rc.1"
 ```
 
 ## The Basics

@@ -550,10 +550,11 @@ function Scheduler:replaceSystem(old, new)
 	table.insert(systems, index, newSystemFn)
 
 	local copy = table.clone(oldSystemInfo)
-	hooks.systemReplace(self, copy, oldSystemInfo)
 
 	oldSystemInfo.system = newSystemFn
 	oldSystemInfo.name = getSystemName(newSystemFn)
+
+	hooks.systemReplace(self, copy, oldSystemInfo)
 
 	self._systemInfo[newSystemFn] = self._systemInfo[oldSystemFn]
 	self._systemInfo[oldSystemFn] = nil

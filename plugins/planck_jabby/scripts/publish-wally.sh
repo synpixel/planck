@@ -7,8 +7,6 @@ rojo sourcemap default.project.json -o sourcemap.json
 rm -rf dist
 darklua process --config .darklua.json src/ dist/src
 
-cp README.md dist/README.md
-cp LICENSE.md dist/LICENSE.md
 cp wally.toml dist/wally.toml
 cp wally.lock dist/wally.lock
 

@@ -57,6 +57,23 @@ function Scheduler:_addHook(hook, fn)
 	table.insert(self._hooks[hook], fn)
 end
 
+--- @method getDeltaTime
+--- @within Scheduler
+--- @return number
+---
+--- Returns the time since the system was ran last.
+--- This must be used within a registered system.
+function Scheduler:getDeltaTime()
+	local systemFn = debug.info(2, "f")
+	if not systemFn or not self._systemInfo[systemFn] then
+		error(
+			"Scheduler:getDeltaTime() must be used within a registered system"
+		)
+	end
+
+	return self._systemInfo[systemFn].deltaTime or 0
+end
+
 -- Inspiration from https://github.com/matter-ecs/matter <3
 function Scheduler:_handleLogs(systemInfo)
 	if not systemInfo.timeLastLogged then
@@ -94,6 +111,10 @@ function Scheduler:runSystem(system)
 	end
 
 	local systemInfo = self._systemInfo[system]
+	local now = os.clock()
+
+	systemInfo.deltaTime = now - (systemInfo.lastTime or now)
+	systemInfo.lastTime = now
 
 	if not self._thread then
 		self._thread = coroutine.create(function()

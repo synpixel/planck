@@ -193,6 +193,22 @@ describe("scheduler", function()
 		myScheduler:run(myPipeline) -- Expect system to not run
 	end)
 
+	test("getDeltaTime", function()
+		local deltaTime
+
+		local myScheduler = Scheduler.new()
+
+		local system = function()
+			deltaTime = myScheduler:getDeltaTime()
+		end
+
+		myScheduler:addSystem(system)
+		myScheduler:run(system)
+		expect(deltaTime).toEqual(0)
+		myScheduler:run(system)
+		expect(deltaTime).never.toEqual(0)
+	end)
+
 	describe("startup systems", function()
 		test("should run once", function()
 			expect.assertions(1)

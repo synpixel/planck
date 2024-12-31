@@ -112,6 +112,8 @@ type Scheduler<U...> = {
 
 	runAll: (self: Scheduler<U...>) -> Scheduler<U...>,
 
+	getDeltaTime: (self: Scheduler<U...>) -> number,
+
 	insert: ((self: Scheduler<U...>, phase: Phase) -> Scheduler<U...>) & ((
 		self: Scheduler<U...>,
 		pipeline: Pipeline

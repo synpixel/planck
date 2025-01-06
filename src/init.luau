@@ -2,15 +2,15 @@ local Phase = require("@Project/Phase") :: any
 local Pipeline = require("@Project/Pipeline") :: any
 local Scheduler = require("@Project/Scheduler") :: any
 
-type SystemFn<U...> = ((U...) -> any) | ((U...) -> ())
+export type SystemFn<U...> = ((U...) -> any) | ((U...) -> ())
 
-type SystemTable<U...> = {
+export type SystemTable<U...> = {
 	system: SystemFn<U...>,
 	phase: Phase?,
 	[any]: any,
 }
 
-type System<U...> = SystemFn<U...> | SystemTable<U...>
+export type System<U...> = SystemFn<U...> | SystemTable<U...>
 
 type EventLike = RBXScriptSignal | {
 	connect: (self: EventLike, ...any) -> any,
@@ -27,7 +27,7 @@ type EventInstance = Instance | {
 	[any]: EventLike,
 }
 
-type Phase = {
+export type Phase = {
 	PreStartup: Phase,
 	Startup: Phase,
 	PostStartup: Phase,
@@ -46,7 +46,7 @@ type Phase = {
 	new: (debugName: string?) -> Phase,
 }
 
-type Pipeline = {
+export type Pipeline = {
 	Main: Pipeline,
 	Startup: Pipeline,
 
@@ -60,7 +60,7 @@ type Plugin<U...> = {
 	[any]: any,
 }
 
-type Scheduler<U...> = {
+export type Scheduler<U...> = {
 	addPlugin: (self: Scheduler<U...>, plugin: Plugin<U...>) -> Scheduler<U...>,
 
 	addSystem: (

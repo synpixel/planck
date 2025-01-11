@@ -50,23 +50,30 @@ local function getEventIdentifier(instance, event)
 	return `{instance}{event and `@{event}` or ""}`
 end
 
-local validEventMethods = {
-	"Connect",
-	"connect",
-	"On",
-	"on",
-}
+local EVENT_CONNECT_METHODS = { "Connect", "On", "on", "connect" }
 
 local function isValidEvent(instance, event)
-	local eventInstance = event and instance[event] or instance
+	local eventInstance = instance
 
-	if typeof(eventInstance) == "RBXScriptSignal" then
+	if typeof(event) == "RBXScriptSignal" or type(event) == "table" then
+		eventInstance = event
+	elseif type(event) == "string" then
+		eventInstance = instance[event]
+	end
+
+	if type(eventInstance) == "function" then
 		return true
-	elseif typeof(eventInstance) == "table" then
-		for _, method in validEventMethods do
-			if eventInstance[method] ~= nil then
-				return true
+	elseif typeof(eventInstance) == "RBXScriptSignal" then
+		return true
+	end
+
+	if type(eventInstance) == "table" then
+		for _, method in EVENT_CONNECT_METHODS do
+			if type(eventInstance[method]) ~= "function" then
+				continue
 			end
+
+			return true
 		end
 	end
 

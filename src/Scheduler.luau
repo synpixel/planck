@@ -651,17 +651,6 @@ function Scheduler:_addBuiltins()
 
 	local startupHasRan = {}
 
-	self:setRunCondition(Pipeline.Startup, function()
-		local phases = Pipeline.Startup._phases
-		local hasRan = startupHasRan[phases[#phases]]
-
-		if not hasRan then
-			startupHasRan[phases[#phases]] = true
-		end
-
-		return not hasRan
-	end)
-
 	for _, phase in Pipeline.Startup._phases do
 		self:setRunCondition(phase, function()
 			local hasRan = startupHasRan[phase]

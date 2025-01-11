@@ -236,5 +236,32 @@ describe("scheduler", function()
 			bindableEvent:Fire()
 			bindableEvent:Fire()
 		end)
+
+		test("each run exactly once", function()
+			expect.assertions(3)
+
+			local myPhase = Phase.new("myPhase")
+			local bindableEvent = Instance.new("BindableEvent")
+
+			local n = 0
+
+			Scheduler.new()
+				:addSystem(function()
+					n += 1
+					expect(n).toEqual(1)
+				end, Phase.PreStartup)
+				:addSystem(function()
+					n += 1
+					expect(n).toEqual(2)
+				end, Phase.Startup)
+				:addSystem(function()
+					n += 1
+					expect(n).toEqual(3)
+				end, Phase.PostStartup)
+				:insert(myPhase, bindableEvent, bindableEvent.Event)
+
+			bindableEvent:Fire()
+			bindableEvent:Fire()
+		end)
 	end)
 end)

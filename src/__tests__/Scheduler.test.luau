@@ -220,5 +220,21 @@ describe("scheduler", function()
 			myScheduler:runAll()
 			myScheduler:runAll()
 		end)
+
+		test("run before events once", function()
+			expect.assertions(1)
+
+			local myPhase = Phase.new("myPhase")
+			local bindableEvent = Instance.new("BindableEvent")
+
+			Scheduler.new(1, 2, 3)
+				:addSystem(function(...)
+					expect({ ... }).toEqual({ 1, 2, 3 })
+				end, Phase.Startup)
+				:insert(myPhase, bindableEvent, bindableEvent.Event)
+
+			bindableEvent:Fire()
+			bindableEvent:Fire()
+		end)
 	end)
 end)

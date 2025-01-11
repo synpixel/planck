@@ -39,6 +39,7 @@ function Plugin:build(scheduler: any)
 	for systemFn, systemInfo in scheduler._systemInfo do
 		local id = jabbyScheduler:register_system({
 			name = systemInfo.name,
+			phase = tostring(systemInfo.phase),
 		})
 
 		systemToId[systemFn] = id
@@ -49,6 +50,7 @@ function Plugin:build(scheduler: any)
 		function(info: SystemsAddRemove)
 			local id = jabbyScheduler:register_system({
 				name = info.system.name,
+				phase = tostring(info.system.phase),
 			})
 
 			systemToId[info.system.system] = id
@@ -74,6 +76,7 @@ function Plugin:build(scheduler: any)
 
 			local id = jabbyScheduler:register_system({
 				name = info.new.name,
+				phase = tostring(info.new.phase),
 			})
 
 			systemToId[newSystem] = id

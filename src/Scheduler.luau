@@ -459,6 +459,10 @@ function Scheduler:addSystem(system, phase)
 
 	hooks.systemAdd(self, systemInfo)
 
+	if type(system) == "table" and system.runCondition then
+		self:setRunCondition(systemFn, system.runCondition)
+	end
+
 	return self
 end
 

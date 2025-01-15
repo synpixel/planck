@@ -434,10 +434,15 @@ function Scheduler:addSystem(system, phase)
 		error("Unknown system passed to Scheduler:addSystem(unknown, phase?)")
 	end
 
+	local name = getSystemName(systemFn)
+	if type(system) == "table" and system.name then
+		name = system.name
+	end
+
 	local systemInfo = {
 		system = systemFn,
 		phase = phase,
-		name = getSystemName(systemFn),
+		name = name,
 		logs = {},
 	}
 

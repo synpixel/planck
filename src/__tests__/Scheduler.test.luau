@@ -19,11 +19,12 @@ describe("scheduler", function()
 			local myPhase = Phase.new("myPhase")
 			local myScheduler = Scheduler.new():insert(myPhase)
 
+			local orderedPhases =
+				myScheduler._defaultDependencyGraph:getOrderedList()
 			local mainIndex =
-				table.find(myScheduler._orderedPhases, Phase.Update)
+				table.find(orderedPhases, myScheduler._defaultPhase)
 
-			expect(myScheduler._orderedPhases[mainIndex - 1]).toBe(myPhase)
-			expect(myScheduler._phaseToSystems[myPhase]).toBeTruthy()
+			expect(orderedPhases[mainIndex - 1]).toBe(myPhase)
 		end)
 
 		test("phase with event", function()
@@ -32,18 +33,15 @@ describe("scheduler", function()
 			local myScheduler = Scheduler.new()
 				:insert(myPhase, RunService, "Heartbeat")
 
-			local mainIndex =
-				table.find(myScheduler._orderedPhases, Phase.Update)
-
-			expect(myScheduler._orderedPhases[mainIndex - 1]).toBe(myPhase)
-			expect(myScheduler._phaseToSystems[myPhase]).toBeTruthy()
-
 			local identifier = `{RunService}@Heartbeat`
-			local phases = myScheduler._eventToPhases[identifier]
+			local dependencyGraph =
+				myScheduler._eventDependencyGraphs[identifier]
 
-			expect(phases).toBeTruthy()
-			expect(phases).toContain(myPhase)
+			expect(dependencyGraph).toBeTruthy()
 			expect(myScheduler._connectedEvents[identifier]).toBeTruthy()
+
+			local orderedList = dependencyGraph:getOrderedList()
+			expect(orderedList[#orderedList]).toBe(myPhase)
 		end)
 
 		test("pipeline", function()
@@ -55,13 +53,16 @@ describe("scheduler", function()
 
 			local myScheduler = Scheduler.new():insert(myPipeline)
 
+			local orderedDependencies =
+				myScheduler._defaultDependencyGraph:getOrderedList()
 			local mainIndex =
-				table.find(myScheduler._orderedPhases, Phase.Update)
+				table.find(orderedDependencies, myScheduler._defaultPhase)
 
-			expect(myScheduler._orderedPhases[mainIndex - 2]).toBe(myPhase)
-			expect(myScheduler._orderedPhases[mainIndex - 1]).toBe(otherPhase)
-			expect(myScheduler._phaseToSystems[myPhase]).toBeTruthy()
-			expect(myScheduler._phaseToSystems[otherPhase]).toBeTruthy()
+			expect(orderedDependencies[mainIndex - 1]).toBe(myPipeline)
+
+			local orderedPhases = myPipeline.dependencyGraph:getOrderedList()
+			expect(orderedPhases[1]).toBe(myPhase)
+			expect(orderedPhases[2]).toBe(otherPhase)
 		end)
 
 		test("pipeline with event", function()
@@ -74,21 +75,19 @@ describe("scheduler", function()
 			local myScheduler = Scheduler.new()
 				:insert(myPipeline, RunService, "Heartbeat")
 
-			local mainIndex =
-				table.find(myScheduler._orderedPhases, Phase.Update)
-
-			expect(myScheduler._orderedPhases[mainIndex - 2]).toBe(myPhase)
-			expect(myScheduler._orderedPhases[mainIndex - 1]).toBe(otherPhase)
-			expect(myScheduler._phaseToSystems[myPhase]).toBeTruthy()
-			expect(myScheduler._phaseToSystems[otherPhase]).toBeTruthy()
-
 			local identifier = `{RunService}@Heartbeat`
-			local phases = myScheduler._eventToPhases[identifier]
+			local dependencyGraph =
+				myScheduler._eventDependencyGraphs[identifier]
 
-			expect(phases).toBeTruthy()
-			expect(phases).toContain(myPhase)
-			expect(phases).toContain(otherPhase)
+			expect(dependencyGraph).toBeTruthy()
 			expect(myScheduler._connectedEvents[identifier]).toBeTruthy()
+
+			local orderedList = dependencyGraph:getOrderedList()
+			expect(orderedList[1]).toBe(myPipeline)
+
+			local orderedPhases = myPipeline.dependencyGraph:getOrderedList()
+			expect(orderedPhases[1]).toBe(myPhase)
+			expect(orderedPhases[2]).toBe(otherPhase)
 		end)
 	end)
 
@@ -100,19 +99,17 @@ describe("scheduler", function()
 
 			local myScheduler = Scheduler.new()
 				:insert(phaseOne)
-				:insert(phaseThree)
-				:insertAfter(phaseTwo, phaseOne)
+				:insert(phaseTwo)
+				:insertAfter(phaseThree, phaseOne)
 
+			local orderedPhases =
+				myScheduler._defaultDependencyGraph:getOrderedList()
 			local mainIndex =
-				table.find(myScheduler._orderedPhases, Phase.Update)
+				table.find(orderedPhases, myScheduler._defaultPhase)
 
-			expect(myScheduler._orderedPhases[mainIndex - 3]).toBe(phaseOne)
-			expect(myScheduler._orderedPhases[mainIndex - 2]).toBe(phaseTwo)
-			expect(myScheduler._orderedPhases[mainIndex - 1]).toBe(phaseThree)
-
-			expect(myScheduler._phaseToSystems[phaseOne]).toBeTruthy()
-			expect(myScheduler._phaseToSystems[phaseTwo]).toBeTruthy()
-			expect(myScheduler._phaseToSystems[phaseThree]).toBeTruthy()
+			expect(orderedPhases[mainIndex - 3]).toBe(phaseOne)
+			expect(orderedPhases[mainIndex - 2]).toBe(phaseTwo)
+			expect(orderedPhases[mainIndex - 1]).toBe(phaseThree)
 		end)
 
 		test("pipeline", function()
@@ -130,17 +127,14 @@ describe("scheduler", function()
 				:insert(pipelineTwo)
 				:insertAfter(pipelineThree, pipelineOne)
 
+			local orderedDependencies =
+				myScheduler._defaultDependencyGraph:getOrderedList()
 			local mainIndex =
-				table.find(myScheduler._orderedPhases, Phase.Update)
-			expect(myScheduler._orderedPhases[mainIndex - 4]).toBe(phaseOne)
-			expect(myScheduler._orderedPhases[mainIndex - 3]).toBe(phaseTwo)
-			expect(myScheduler._orderedPhases[mainIndex - 2]).toBe(phaseThree)
-			expect(myScheduler._orderedPhases[mainIndex - 1]).toBe(phaseFour)
+				table.find(orderedDependencies, myScheduler._defaultPhase)
 
-			expect(myScheduler._phaseToSystems[phaseOne]).toBeTruthy()
-			expect(myScheduler._phaseToSystems[phaseTwo]).toBeTruthy()
-			expect(myScheduler._phaseToSystems[phaseThree]).toBeTruthy()
-			expect(myScheduler._phaseToSystems[phaseFour]).toBeTruthy()
+			expect(orderedDependencies[mainIndex - 3]).toBe(pipelineOne)
+			expect(orderedDependencies[mainIndex - 2]).toBe(pipelineTwo)
+			expect(orderedDependencies[mainIndex - 1]).toBe(pipelineThree)
 		end)
 	end)
 
@@ -237,13 +231,14 @@ describe("scheduler", function()
 			bindableEvent:Fire()
 		end)
 
-		test("each run exactly once", function()
+		test("each run exactly once", function(_, done)
 			expect.assertions(3)
 
 			local myPhase = Phase.new("myPhase")
 			local bindableEvent = Instance.new("BindableEvent")
 
 			local n = 0
+			local ranOnce = false
 
 			Scheduler.new()
 				:addSystem(function()
@@ -259,6 +254,13 @@ describe("scheduler", function()
 					expect(n).toEqual(3)
 				end, Phase.PostStartup)
 				:insert(myPhase, bindableEvent, bindableEvent.Event)
+				:addSystem(function()
+					if ranOnce then
+						done()
+					end
+
+					ranOnce = true
+				end, myPhase)
 
 			bindableEvent:Fire()
 			bindableEvent:Fire()

@@ -1,3 +1,5 @@
+--!nonstrict
+local DependencyGraph = require("@Project/DependencyGraph")
 local Phase = require("@Project/Phase")
 
 --- @class Pipeline
@@ -19,22 +21,37 @@ end
 ---
 --- Adds a Phase to the Pipeline, ordering it implicitly.
 function Pipeline:insert(phase)
-	table.insert(self._phases, phase)
+	self.dependencyGraph:insert(phase)
 	return self
 end
 
---- @method insert
+--- @method insertAfter
 --- @within Pipeline
 --- @param phase Phase
 --- @param after Phase
 --- @return Pipeline
 ---
 --- Adds a Phase to the Pipeline after another Phase, ordering it explicitly.
-function Pipeline:insertAfter(phase, otherPhase)
-	local i = table.find(self._phases, phase)
-	assert(i, "Phase not initialized in Pipeline")
+function Pipeline:insertAfter(phase, afterPhase)
+	local i = table.find(self.dependencyGraph.nodes, afterPhase)
+	assert(i, "Unknown Phase in Pipeline:insertAfter(_, unknown), try adding this Phase to the Pipeline.")
 
-	table.insert(self._phases, i + 1, otherPhase)
+	self.dependencyGraph:insertAfter(phase, afterPhase)
+	return self
+end
+
+--- @method insertBefore
+--- @within Pipeline
+--- @param phase Phase
+--- @param before Phase
+--- @return Pipeline
+---
+--- Adds a Phase to the Pipeline before another Phase, ordering it explicitly.
+function Pipeline:insertBefore(phase, beforePhase)
+	local i = table.find(self.dependencyGraph.nodes, beforePhase)
+	assert(i, "Unknown Phase in Pipeline:insertBefore(_, unknown), try adding this Phase to the Pipeline.")
+
+	self.dependencyGraph:insertBefore(phase, beforePhase)
 	return self
 end
 
@@ -47,7 +64,7 @@ function Pipeline.new(name: string?)
 	return setmetatable({
 		_name = name,
 		_type = "pipeline",
-		_phases = {},
+		dependencyGraph = DependencyGraph.new(),
 	}, Pipeline)
 end
 

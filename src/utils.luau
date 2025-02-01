@@ -24,7 +24,8 @@ end
 local function getSystemName(system: any): string
 	local name = debug.info(system, "n")
 	if not name or string.len(name) == 0 then
-		name = debug.info(system, "sl")
+		local source, line = debug.info(system, "sl")
+		name = `{source}:{line}`
 	end
 
 	return name

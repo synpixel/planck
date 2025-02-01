@@ -112,7 +112,7 @@ function Plugin:build(scheduler: any)
 
 	local phaseDetails = {}
 
-	for _, phase in scheduler._orderedPhases do
+	for phase, _ in scheduler._phaseToSystems do
 		if not phaseDetails[phase] then
 			phaseDetails[phase] = {
 				lastTime = os.clock(),

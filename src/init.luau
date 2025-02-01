@@ -7,6 +7,8 @@ export type SystemFn<U...> = ((U...) -> any) | ((U...) -> ())
 export type SystemTable<U...> = {
 	system: SystemFn<U...>,
 	phase: Phase?,
+	name: string?,
+	runConditions: { (U...) -> boolean }?,
 	[any]: any,
 }
 
@@ -92,7 +94,7 @@ export type Scheduler<U...> = {
 		system: System<U...>
 	) -> Scheduler<U...>,
 
-	setRunCondition: ((
+	addRunCondition: ((
 		self: Scheduler<U...>,
 		system: System<U...>,
 		fn: (U...) -> boolean

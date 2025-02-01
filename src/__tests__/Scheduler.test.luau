@@ -151,7 +151,7 @@ describe("scheduler", function()
 		local myScheduler = Scheduler.new(1, 2, 3)
 			:insert(myPhase)
 			:addSystem(system, myPhase)
-			:setRunCondition(myPhase, function()
+			:addRunCondition(myPhase, function()
 				return bool
 			end)
 
@@ -177,7 +177,7 @@ describe("scheduler", function()
 		local myScheduler = Scheduler.new(1, 2, 3)
 			:insert(myPipeline)
 			:addSystem(system, myPhase)
-			:setRunCondition(myPipeline, function()
+			:addRunCondition(myPipeline, function()
 				return bool
 			end)
 

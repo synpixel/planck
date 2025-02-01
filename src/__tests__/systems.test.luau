@@ -117,7 +117,7 @@ describe("systems", function()
 		local myScheduler = Scheduler.new(1, 2, 3)
 			:insert(myPhase)
 			:addSystem(system, myPhase)
-			:setRunCondition(system, function()
+			:addRunCondition(system, function()
 				return bool
 			end)
 
@@ -125,6 +125,43 @@ describe("systems", function()
 
 		bool = false
 		myScheduler:runAll() -- Expect system to not run
+	end)
+
+	test("multiple run conditions", function()
+		expect.assertions(1)
+
+		local firstCondition = true
+		local secondCondition = true
+
+		local system = function(...)
+			expect({ ... }).toEqual({ 1, 2, 3 })
+		end
+
+		local myPhase = Phase.new("myPhase")
+		local myScheduler = Scheduler.new(1, 2, 3)
+			:insert(myPhase)
+			:addSystem(system, myPhase)
+			:addRunCondition(system, function()
+				return firstCondition
+			end)
+			:addRunCondition(system, function()
+				return secondCondition
+			end)
+
+		firstCondition = false
+		myScheduler:runAll()
+
+		firstCondition = true
+		secondCondition = false
+		myScheduler:runAll()
+
+		firstCondition = false
+		secondCondition = false
+		myScheduler:runAll()
+
+		firstCondition = true
+		secondCondition = true
+		myScheduler:runAll() -- Expect to run
 	end)
 
 	test("yield", function()

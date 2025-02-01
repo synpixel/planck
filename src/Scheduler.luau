@@ -105,8 +105,7 @@ function Scheduler:_handleLogs(systemInfo)
 end
 
 function Scheduler:runSystem(system)
-	local runIf = self._runIfConditions[system]
-	if runIf and runIf(table.unpack(self._vargs)) == false then
+	if self:_canRun(system) == false then
 		return
 	end
 
@@ -205,8 +204,7 @@ function Scheduler:runSystem(system)
 end
 
 function Scheduler:runPhase(phase)
-	local runIf = self._runIfConditions[phase]
-	if runIf and runIf(table.unpack(self._vargs)) == false then
+	if self:_canRun(phase) == false then
 		return
 	end
 
@@ -222,8 +220,7 @@ function Scheduler:runPhase(phase)
 end
 
 function Scheduler:runPipeline(pipeline)
-	local runIf = self._runIfConditions[pipeline]
-	if runIf and runIf(table.unpack(self._vargs)) == false then
+	if self:_canRun(pipeline) == false then
 		return
 	end
 
@@ -236,6 +233,20 @@ function Scheduler:runPipeline(pipeline)
 	for _, phase in orderedList do
 		self:runPhase(phase)
 	end
+end
+
+function Scheduler:_canRun(dependent)
+	local conditions = self._runIfConditions[dependent]
+
+	if conditions then
+		for _, runIf in conditions do
+			if runIf(table.unpack(self._vargs)) == false then
+				return false
+			end
+		end
+	end
+
+	return true
 end
 
 --- @method run
@@ -523,8 +534,10 @@ function Scheduler:addSystem(system, phase)
 
 	hooks.systemAdd(self, systemInfo)
 
-	if type(system) == "table" and system.runCondition then
-		self:setRunCondition(systemFn, system.runCondition)
+	if type(system) == "table" and system.runConditions then
+		for _, condition in system.runConditions do
+			self:addRunCondition(systemFn, condition)
+		end
 	end
 
 	return self
@@ -662,7 +675,7 @@ function Scheduler:replaceSystem(old, new)
 	return self
 end
 
---- @method setRunCondition
+--- @method addRunCondition
 --- @within Scheduler
 --- @param system System
 --- @param fn (U...) -> boolean
@@ -670,25 +683,23 @@ end
 --- Adds a Run Condition which the Scheduler will check before
 --- this System is ran.
 
---- @method setRunCondition
+--- @method addRunCondition
 --- @within Scheduler
 --- @param phase Phase
 --- @param fn (U...) -> boolean
 ---
 --- Adds a Run Condition which the Scheduler will check before
---- any Systems tagged with this Phase are ran.
+--- any Systems within this Phase are ran.
 
---- @method setRunCondition
+--- @method addRunCondition
 --- @within Scheduler
 --- @param pipeline Pipeline
 --- @param fn (U...) -> boolean
 ---
 --- Adds a Run Condition which the Scheduler will check before
 --- any Systems within any Phases apart of this Pipeline are ran.\
---- \
---- This Run Condition will be applied to the Phases themselves.
 
-function Scheduler:setRunCondition(dependent, fn)
+function Scheduler:addRunCondition(dependent, fn)
 	local system = getSystem(dependent)
 	if system then
 		dependent = system
@@ -699,7 +710,12 @@ function Scheduler:setRunCondition(dependent, fn)
 		"Attempt to pass unknown dependent into Scheduler:setRunCondition(unknown, _)"
 	)
 
-	self._runIfConditions[dependent] = fn
+	if not self._runIfConditions[dependent] then
+		self._runIfConditions[dependent] = {}
+	end
+
+	table.insert(self._runIfConditions[dependent], fn)
+
 	return self
 end
 
@@ -713,7 +729,7 @@ function Scheduler:_addBuiltins()
 	local startupHasRan = {}
 
 	for _, phase in Pipeline.Startup.dependencyGraph.nodes do
-		self:setRunCondition(phase, function()
+		self:addRunCondition(phase, function()
 			local hasRan = startupHasRan[phase]
 
 			if not hasRan then

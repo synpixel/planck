@@ -19,126 +19,103 @@ You can install Planck with Wally
 Planck = "yetanotherclown/planck@0.1.0-rc.2"
 ```
 
-## Basics
+## What is Planck?
 
-### Phases
+Planck is a standalone scheduler, which allows you to execute code on specific events, with certain conditions, and in a particular order.
 
-A Phase is just a tag you can assign to your systems, it's a way to order systems as a group.
+This scheduler is library agnostic, which means that it *doesn't matter* which ECS library your using or if you're even using an ECS.
+You can use this with [Jecs], [Matter], [ECR], and other Luau ECS Libraries.
 
-```luau
-local myPhase = Phase.new("debugName")
+## Does any of this really matter?
 
-scheduler
-    :insert(myPhase, RunService, "Heartbeat")
-    :addSystems(systemA, myPhase)
-```
+Yes, and no.
+Your ECS code should be able to run in any order, without any conditions, and without concern for which event it's running on, as long as *it is* running.
 
-### Pipelines
+The order of execution, and conditions both serve to *optimize* your code. Some systems don't need to run every frame, which is why we have conditions.
+And the actual order of execution is to reduce latency between changes and effects in your ECS world.
 
-A Pipeline is a group of ordered phases. Each phase will run in the fixed order to which each Phase was passed to it.
+Let's say we have `systemA` and `systemB`. `systemA` modifies data in our world which `systemB` depends on.
+If `systemA` runs *after* `systemB`, then `systemB` will have to wait a whole frame for the modifications to be made.
+This is called being *off-by-a-frame*, and this is why we care about the order of execution.
 
-```luau
-local myPipeline = Pipeline.new()
-    :insert(phaseA)
-    :insert(phaseB)
-    :insert(phaseC)
+## What's Next?
 
-scheduler
-    :insert(myPipeline, RunService, "Heartbeat")
-```
+You may not completely understand what's written above. That's fine.
 
-### Built-in Pipelines & Phases
+For now, you should read the [Official Documentation](https://yetanotherclown.github.io/planck) on how to get started with Planck. These concepts will be explained more in depth as you read.
 
-#### Startup
+## Quick Overview
 
-Systems on these phases will run exactly once, before any other phase runs.
+While it's highly suggested you read the documentation, here is a quick overview of Planck's API.
 
-- PreStartup
-- Startup
-- PostStartup
+### The Scheduler
+
+This is the core of Planck, this is where you add your Systems and set your Phases, Pipelines, and Run Conditions.
 
 ```luau
 local Planck = require("@packages/Planck")
-local Phase = Planck.Phase
+local Scheduler = Planck.Scheduler
 
-local PreStartup = Phase.PreStartup
-local Startup = Phase.Startup
-local PostStartup = Phase.PostStartup
-```
+local Jecs = require("@packages/Jecs")
+local World = Jecs.World
 
-#### Engine Events
+local world = World.new()
+local state = {}
 
-These Phases are ran on Engine RunService Events,
-events are ran in the order listed.
-
-| Event          | Phase          |
-| -------------- | -------------- |
-| PreRender      | PreRender      |
-| PreAnimation   | PreAnimation   |
-| PreSimulation  | PreSimulation  |
-| PostSimulation | PostSimulation |
-| Heartbeat      | Update         |
-
-```luau
-local Planck = require("@packages/Planck")
-local Phase = Planck.Phase
-
-local PreRender = Phase.PreRender
-local PreAnimation = Phase.PreAnimation
-local PreSimulation = Phase.PreSimulation
-local PostSimulation = Phase.PostSimulation
-local Update = Phase.Update
-```
-
-#### Main
-
-The Main Pipeline will run phases on the `RunService.Heartbeat` event.
-
-- First
-- PreUpdate
-- Update
-- PostUpdate
-- Last
-
-```luau
-local Planck = require("@packages/Planck")
-local Phase = Planck.Phase
-
-local First = Phase.First
-local PreUpdate = Phase.PreUpdate
-local Update = Phase.Update
-local PostUpdate = Phase.PostUpdate
-local Last = Phase.Last
+local scheduler = Scheduler.new(world, state)
 ```
 
 ### Systems
 
-A system is just a function, or it could be a system table.
+Systems are really simple, they are just functions which run on an event or in a loop.
 
 ```luau
-local systemA = {
-    phase = myPhase,
-    system = function()
-        -- ...
-    end,
-}
-
-local function systemB()
+local function systemA(world, state)
     -- ...
 end
 
-scheduler
-    :addSystems(systemA)
-    :addSystems(systemB, myPhase)
+return systemA
 ```
 
-### The Scheduler
+And to add it to our Scheduler,
 
-The Scheduler is where you initialize all your Pipelines, Phases, and Systems.
+```luau
+-- ...
+
+local systemA = require("@shared/systems/systemA")
+
+local scheduler = Scheduler.new(world, state)
+    :addSystem(systemA)
+```
+
+### Phases
+
+Phases are used to split up your frame into different sections, this allows us to schedule our systems to run at different moments of a given frame.
 
 ```luau
 local Planck = require("@packages/Planck")
+local Scheduler = Planck.Scheduler
+local Phase = Planck.Phase
 
+-- ...
+
+local systemA = require("@shared/systems/systemA")
+
+local myPhase = Phase.new("myPhase")
+
+local scheduler = Scheduler.new(world, state)
+    :insert(myPhase)
+    :addSystem(systemA, myPhase)
+```
+
+Planck has lots of built-in Phases that should work for most cases,
+→ [Built-in Phases](https://yetanotherclown.github.io/planck/docs/getting_started/phases#built-in-phases)
+
+### Pipelines
+
+Pipelines are ordered groups of Phases, they make working with larger collections of Phases (which all run on the same event) easier.
+
+```luau
 local Phase = Planck.Phase
 local Pipeline = Planck.Pipeline
 local Scheduler = Planck.Scheduler
@@ -152,27 +129,44 @@ local UpdatePipeline = Pipeline.new()
 	:insert(Update)
 	:insert(PostUpdate)
 
-local Render = Phase.new()
-
 local scheduler = scheduler.new(world)
     :insert(UpdatePipeline, RunService, "Heartbeat")
-    :insertAfter(Render, UpdatePipeline)
-    :addSystems(systems, Update)
-
-scheduler:removeSystem(systemA)
-scheduler:replaceSystem(systemA, systemB)
-
-scheduler:editSystem(systemA, newPhase)
-scheduler:editSystem(systemA)
-
-scheduler:setRunCondition(systemA, function(world)
-    return someCondition and true or false
-end)
 ```
 
-### Plugins
+> [!TIP]  
+> The `UpdatePipeline` seen here, already exists in Planck! It's a built-in Pipeline that you can use without any setup.
+> See all [Built-in Phases](https://yetanotherclown.github.io/planck/docs/getting_started/phases#built-in-phases).
 
-The Planck Scheduler is pluggable, providing plugins to add
-support for Jabby and the Matter Hooks runtime.
+### Conditions
 
-You can learn more in the [Plugin Docs](https://yetanotherclown.github.io/planck/docs/plugins/).
+When we run all our systems every frame, there are a lot of systems that may not actually need to run. Run Conditions allow us to
+run our Systems, Phases and Pipelines only sometimes.
+
+```luau
+local function condition(world)
+    if someCondition then
+        return true
+    else
+        return false
+    end
+end
+
+local scheduler = Scheduler.new(world)
+    :setRunCondition(systemA, condition)
+    :setRunCondition(somePhase, condition)
+    :setRunCondition(somePipeline, condition)
+```
+
+Conditions can be useful, but you should use them carefully. It's suggested that you read our page on
+[Conditions](https://yetanotherclown.github.io/planck/docs/design/conditions) to see some useful examples and learn when you should use them.
+
+## Inspiration
+
+Planck's API design is heavily influenced by the [Bevy Engine](https://bevyengine.org/), with Schedules, RunConditions, and more.
+Planck also draws inspiration from [Flecs](https://www.flecs.dev/) for Pipelines and Phases.
+
+We're combining the simple, and beloved API of Bevy with the concept of Pipelines and Phases.
+
+[Jecs]: https://ukendio.github.io/jecs
+[Matter]: https://matter-ecs.github.io/matter
+[ECR]: https://centau.github.io/ecr/

@@ -7,6 +7,8 @@
 	--ifm-navbar-search-input-background-color: var(--ifm-background-color);
 	--ifm-navbar-shadow: none;
 	--ifm-color-primary: #c02760;
+	--docusaurus-highlighted-code-line-bg: #75757544;
+	--ifm-menu-color-background-active: none;
 }
 
 :root[data-theme="light"] {
@@ -92,4 +94,27 @@ aside[class*="docSidebarContainer"] {
 
 div[class*="sourceButtonText"] {
 	border: 0px;
+}
+
+pre[class*="language-"][class*="language-"] {
+	padding: 0 0.5rem !important;
+	margin: 0.5rem 0 !important;
+}
+
+.menu__list-item-collapsible {
+	transition: color var(--ifm-transition-fast) var(--ifm-transition-timing-default);
+}
+
+.menu__list-item-collapsible:hover {
+	color: var(--ifm-menu-color-active);
+	background: none;
+}
+
+.menu__link {
+	transition: color var(--ifm-transition-fast) var(--ifm-transition-timing-default);
+}
+
+.menu__link:hover {
+	color: var(--ifm-menu-color-active);
+	background: none;
 }

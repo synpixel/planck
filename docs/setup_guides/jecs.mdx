@@ -1,0 +1,307 @@
+---
+title: Jecs
+description: Suggested setup guide for Jecs
+sidebar_position: 2
+---
+
+:::note
+This setup guide is only a suggestion, you can pick and choose which Plugins you use with Planck
+or how you use Planck and setup your project.
+:::
+
+Recommended project structure
+
+<pre style={{lineHeight: "120%", width: "fit-content", "--ifm-paragraph-margin-bottom": 0}}>
+    ReplicatedStorage/
+    ├─ Packages/
+    │  ├─ Jabby.luau
+    │  ├─ Jecs.luau
+    │  ├─ Planck.luau
+    │  ├─ PlanckJabby.luau
+    ├─ client/
+    │  ├─ systems/
+    ├─ shared/
+    │  ├─ systems/
+    │  ├─ components.luau
+    │  ├─ scheduler.luau
+    │  ├─ startup.luau
+    │  ├─ world.luau
+    <br />
+    ServerScriptService/
+    ├─ server/
+    │  ├─ systems/
+    │  ├─ server.server.luau
+    <br />
+    StarterPlayerScripts/
+    ├─ client.client.luau
+</pre>
+
+:::note
+The versions for `ukendio/jecs` and `alicesaidhi/jabby` may not be the latest versions,
+only the version used and confirmed to work with this setup guide.
+
+Check the respective repositories for [Jecs](https://github.com/Ukendio/jecs) and [Jabby](https://github.com/alicesaidhi/jabby) for updates.
+:::
+ 
+```toml title="wally.toml"
+[dependencies]
+Jabby = "alicesaidhi/jabby@0.1.0"
+Jecs = "ukendio/jecs@0.5.1"
+Planck = "yetanotherclown/planck@0.1.0-rc.1"
+PlanckJabby = "yetanotherclown/planck-jabby@0.1.0-rc.1"
+MatterHooks = "yetanotherclown/planck-matter-hooks@0.1.0-rc.1"
+```
+
+### Creating the World
+
+First, we'll create a module called `world.luau` where we create and export our Jecs World.
+
+```lua title="ReplicatedStorage/shared/world.luau"
+local Jecs = require("@packages/Jecs")
+local World = Jecs.World
+
+local world = World.new()
+
+return world
+```
+
+### Creating the Scheduler
+
+Next, we'll create a module called `scheduler.luau` where we create and export our scheduler.
+
+```lua title="ReplicatedStorage/shared/scheduler.luau"
+local Planck = require("@packages/Planck")
+local Scheduler = Planck.Scheduler
+
+local scheduler = scheduler.new()
+
+return scheduler
+```
+
+Then lets pass the world to our scheduler
+
+```lua {4,6}title="ReplicatedStorage/shared/scheduler.luau"
+local Planck = require("@packages/Planck")
+local Scheduler = Planck.Scheduler
+
+local world = require("@shared/world")
+
+local scheduler = scheduler.new(world)
+
+return scheduler
+```
+
+And then let's add the Jabby Plugin
+
+```lua {6,7,10} title="ReplicatedStorage/shared/scheduler.luau"
+local Planck = require("@packages/Planck")
+local Scheduler = Planck.Scheduler
+
+local world = require("@shared/world")
+
+local PlanckJabby = require("@packages/PlanckJabby")
+local jabbyPlugin = PlanckJabby.new()
+
+local scheduler = scheduler.new(world)
+    :addPlugin(jabbyPlugin)
+
+return scheduler
+```
+
+This next part is up to preference, if you would like to use the Matter topoRuntime
+to run Matter Hooks with Jecs you can follow add the Matter Hooks Plugin too.
+
+```lua {9,10,14} title="ReplicatedStorage/shared/scheduler.luau"
+local Planck = require("@packages/Planck")
+local Scheduler = Planck.Scheduler
+
+local world = require("@shared/world")
+
+local PlanckJabby = require("@packages/PlanckJabby")
+local jabbyPlugin = PlanckJabby.new()
+
+local MatterHooks = require("@packages/MatterHooks")
+local hooksPlugin = MatterHooks.new()
+
+local scheduler = scheduler.new(world)
+    :addPlugin(jabbyPlugin)
+    :addPlugin(hooksPlugin)
+
+return scheduler
+```
+
+### Making Components
+
+We'll store our Jecs components in a `components.luau` module.
+
+```lua title="ReplicatedStorage/shared/components.luau"
+local world = require("@shared/world")
+
+return {
+    Name = world:component(),
+    Eats = world:component(),
+    Apples = world:component(),
+    Oranges = world:component(),
+}
+```
+
+### Creating Your First Systems
+
+Let's create a basic system with Planck + Jecs
+
+This system will setup our initial entities, hence it running on the `Startup` phase.
+
+```lua title="ReplicatedStorage/shared/systems/systemA.luau"
+local Jecs = require("@packages/Jecs")
+local pair = Jecs.pair
+
+local Planck = require("@packages/Planck")
+local Phase = Planck.Phase
+
+local components = require("@shared/components")
+
+local Name = components.Name
+local Eats = components.Eats
+local Apples = components.Apples
+local Oranges = components.Oranges
+
+local function systemA(world)
+    world:set(Apples, Name, "apples")
+    world:set(Oranges, Name, "oranges")
+
+    local bob = world:entity()
+    world:set(bob, pair(Eats, Apples), 10)
+    world:set(bob, pair(Eats, Oranges), 5)
+    world:set(bob, Name, "bob")
+
+    local alice = world:entity()
+    world:set(alice, pair(Eats, Apples), 4)
+    world:set(alice, Name, "alice")
+end
+
+return {
+    system = systemA
+    phase = Phase.Startup
+}
+```
+
+This next system will query each frame and print out which entity eats what.
+
+```lua title="ReplicatedStorage/shared/systems/systemB.luau"
+local Jecs = require("@packages/Jecs")
+local Wildcard = Jecs.Wildcard
+
+local components = require("@shared/components")
+
+local Name = components.Name
+local Eats = components.Eats
+local Apples = components.Apples
+local Oranges = components.Oranges
+
+local function systemB(world)
+    for id, amount in world:query(pair(Eats, Wildcard)) do
+        local food = world:target(id, Eats)
+        local foodName = world:get(food, Name)
+        local entityName = world:get(id, Name)
+        
+        print(string.format("%s eats %d %s", entityName, amount, name))
+    end
+end
+
+return systemB
+```
+
+Notice how you can define systems as either a function or a table!
+
+While you can set the phase directly in `Scheduler:addSystem(fn, phase)`,
+it may be convenient to use a System Table instead.
+
+:::note
+Notice how we pass `world` into our system functions instead of requiring the
+module we made.
+
+We do this to keep systems pure, we avoid external dependencies by passing our
+dependencies as function parameters. This makes our systems more testable and
+reusable.
+:::
+
+### Your Startup Function
+
+Your Startup function is where you first require the world and scheduler modules,
+where you would add your systems to the scheduler, and where we will setup Jabby.
+
+```lua title="ReplicatedStorage/shared/startup.luau"
+local Jabby = require("@shared/Jabby")
+
+local scheduler = require("@shared/scheduler")
+local world = require("@shared/world")
+
+return function(systems)
+    scheduler
+        :addSystems(systems) -- Assuming you're using SystemTables!
+
+    Jabby.register({
+        applet = Jabby.applets.world,
+        name = "Jecs World",
+        configuration = {
+            world = world
+        }
+    })
+end
+```
+
+### Server / Client Scripts
+
+On the client, we'll add the `shared` and `client` systems.
+
+```lua title="ReplicatedStorage/client/client.client.luau"
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local startup = require("@shared/startup")
+
+local systems = {}
+
+local function addSystems(folder)
+    for _, system in folder:GetChildren() do
+        if not system:IsA("ModuleScript") then
+            continue
+        end
+
+        table.insert(systems, require(system))
+    end
+end
+
+addSystems(ReplicatedStorage.shared.systems)
+addSystems(ReplicatedStorage.client.systems)
+
+startup(systems)
+```
+
+On the server, we'll instead add the `server` systems.
+
+```lua {18} title="ServerScriptService/server/server.server.luau"
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local startup = require("@shared/startup")
+
+local systems = {}
+
+local function addSystems(folder)
+    for _, system in folder:GetChildren() do
+        if not system:IsA("ModuleScript") then
+            continue
+        end
+
+        table.insert(systems, require(system))
+    end
+end
+
+addSystems(ReplicatedStorage.shared.systems)
+addSystems(ReplicatedStorage.server.systems)
+
+startup(systems)
+```
+
+### Credits
+
+This setup guide was heavily influenced by official Jecs examples and documentation.

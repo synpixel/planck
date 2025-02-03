@@ -1,7 +1,7 @@
 ---
 title: Plugins
 description: About Planck Plugins
-sidebar_position: 2
+sidebar_position: 4
 ---
 
 Plugins in Planck allow you to incorporate it easily into other ECS tooling and libraries.
@@ -14,17 +14,19 @@ you choose whether or not to include it. This ensures you only ever get what you
 ### Matter Hooks
 
 The Matter Hooks plugin provides a way to use the Matter topoRuntime to use any
-hook made for Matter.
+hook made for Matter. **This can be used with any ECS library.**
 
-:::note
-This must be installed and added to the Scheduler to still use Hooks with Matter.
+:::tip
+The Matter Hooks Plugin can be used with any ECS library, like Jecs or ECR.
+If you want to still use hooks when using Matter, you must still add this
+Plugin to the Scheduler for hooks to work.
 :::
 
 See the [Matter Hooks](/docs/plugins/matter_hooks) page.
 
 ### Matter Debugger
 
-Matter provides a built-in Debugger, this plugin adds support for Plank.
+Matter provides a built-in Debugger, this plugin adds support for Planck.
 
 See the [Matter Debugger](/docs/plugins/matter_debugger) page.
 

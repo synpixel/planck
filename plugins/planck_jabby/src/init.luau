@@ -122,4 +122,18 @@ function Plugin.new()
 	return setmetatable({}, Plugin)
 end
 
-return Plugin
+type SchedulerLike<U...> = {
+	addPlugin: (
+		self: SchedulerLike<U...>,
+		plugin: Plugin<U...>
+	) -> SchedulerLike<U...>,
+	new: (U...) -> SchedulerLike<U...>,
+	[any]: any,
+}
+
+type Plugin<U...> = {
+	build: (self: Plugin<U...>, scheduler: SchedulerLike<U...>) -> (),
+	new: () -> Plugin<U...>,
+}
+
+return (Plugin :: any) :: Plugin<...any>

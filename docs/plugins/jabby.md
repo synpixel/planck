@@ -11,7 +11,7 @@ You can install it with,
 
 ```toml
 [dependencies]
-PlanckJabby = "yetanotherclown/planck-jabby@0.1.0-rc.1"
+PlanckJabby = "yetanotherclown/planck-jabby@0.1.0-rc.3"
 ```
 
 Then to set it up,

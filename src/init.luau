@@ -25,22 +25,10 @@ export type Phase = {
 	Startup: Phase,
 	PostStartup: Phase,
 
-	PreRender: Phase,
-	PreAnimation: Phase,
-	PreSimulation: Phase,
-	PostSimulation: Phase,
-
-	First: Phase,
-	PreUpdate: Phase,
-	Update: Phase,
-	PostUpdate: Phase,
-	Last: Phase,
-
 	new: (debugName: string?) -> Phase,
 }
 
 export type Pipeline = {
-	Main: Pipeline,
 	Startup: Pipeline,
 
 	insert: (self: Pipeline, phase: Phase) -> Pipeline,

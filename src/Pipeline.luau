@@ -34,7 +34,10 @@ end
 --- Adds a Phase to the Pipeline after another Phase, ordering it explicitly.
 function Pipeline:insertAfter(phase, afterPhase)
 	local i = table.find(self.dependencyGraph.nodes, afterPhase)
-	assert(i, "Unknown Phase in Pipeline:insertAfter(_, unknown), try adding this Phase to the Pipeline.")
+	assert(
+		i,
+		"Unknown Phase in Pipeline:insertAfter(_, unknown), try adding this Phase to the Pipeline."
+	)
 
 	self.dependencyGraph:insertAfter(phase, afterPhase)
 	return self
@@ -49,7 +52,10 @@ end
 --- Adds a Phase to the Pipeline before another Phase, ordering it explicitly.
 function Pipeline:insertBefore(phase, beforePhase)
 	local i = table.find(self.dependencyGraph.nodes, beforePhase)
-	assert(i, "Unknown Phase in Pipeline:insertBefore(_, unknown), try adding this Phase to the Pipeline.")
+	assert(
+		i,
+		"Unknown Phase in Pipeline:insertBefore(_, unknown), try adding this Phase to the Pipeline."
+	)
 
 	self.dependencyGraph:insertBefore(phase, beforePhase)
 	return self
@@ -76,16 +82,5 @@ Pipeline.Startup = Pipeline.new()
 	:insert(Phase.PreStartup)
 	:insert(Phase.Startup)
 	:insert(Phase.PostStartup)
-
---- @prop Main Pipeline
---- @within Pipeline
----
---- A Pipeline containing the `First`, `PreUpdate`, `Update`, `PostUpdate`, and `Last` phases.
-Pipeline.Main = Pipeline.new()
-	:insert(Phase.First)
-	:insert(Phase.PreUpdate)
-	:insert(Phase.Update)
-	:insert(Phase.PostUpdate)
-	:insert(Phase.Last)
 
 return Pipeline

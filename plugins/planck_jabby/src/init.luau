@@ -31,7 +31,9 @@ local n = 0
 function Plugin:build(scheduler: any)
 	n += 1
 
-	local name = `Planck{n > 0 and ` {n}` or ""}`
+	local identifier = n > 1 and ` #{n}` or ""
+	local name = `Planck{identifier}`
+
 	local jabbyScheduler = Jabby.scheduler.create(name)
 
 	local systemToId = {}

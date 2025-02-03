@@ -2,6 +2,12 @@ local Phase = require("@Project/Phase") :: any
 local Pipeline = require("@Project/Pipeline") :: any
 local Scheduler = require("@Project/Scheduler") :: any
 
+local conditions = require("@Project/conditions")
+local utils = require("@Project/utils")
+
+type EventLike = utils.EventLike
+type EventInstance = utils.EventInstance
+
 export type SystemFn<U...> = ((U...) -> any) | ((U...) -> ())
 
 export type SystemTable<U...> = {
@@ -13,21 +19,6 @@ export type SystemTable<U...> = {
 }
 
 export type System<U...> = SystemFn<U...> | SystemTable<U...>
-
-type EventLike = RBXScriptSignal | {
-	connect: (self: EventLike, ...any) -> any,
-	[any]: any,
-} | {
-	Connect: (self: EventLike, ...any) -> any,
-	[any]: any,
-} | {
-	on: (self: EventLike, ...any) -> any,
-	[any]: any,
-}
-
-type EventInstance = Instance | {
-	[any]: EventLike,
-}
 
 export type Phase = {
 	PreStartup: Phase,
@@ -97,15 +88,18 @@ export type Scheduler<U...> = {
 	addRunCondition: ((
 		self: Scheduler<U...>,
 		system: System<U...>,
-		fn: (U...) -> boolean
+		fn: (U...) -> boolean,
+		...any
 	) -> Scheduler<U...>) & ((
 		self: Scheduler<U...>,
 		phase: Phase,
-		fn: (U...) -> boolean
+		fn: (U...) -> boolean,
+		...any
 	) -> Scheduler<U...>) & ((
 		self: Scheduler<U...>,
 		pipeline: Pipeline,
-		fn: (U...) -> boolean
+		fn: (U...) -> boolean,
+		...any
 	) -> Scheduler<U...>),
 
 	run: ((self: Scheduler<U...>, system: System<U...>) -> Scheduler<U...>)
@@ -150,4 +144,9 @@ return {
 	Scheduler = Scheduler :: {
 		new: <U...>(U...) -> Scheduler<U...>,
 	},
+
+	isNot = conditions.isNot,
+	runOnce = conditions.runOnce,
+	timePassed = conditions.timePassed,
+	onEvent = conditions.onEvent,
 }

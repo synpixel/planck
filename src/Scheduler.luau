@@ -5,6 +5,7 @@ local Phase = require("@Project/Phase")
 
 local utils = require("@Project/utils")
 local hooks = require("@Project/hooks")
+local conditions = require("@Project/conditions")
 
 local getSystem = utils.getSystem
 local getSystemName = utils.getSystemName
@@ -726,27 +727,19 @@ function Scheduler:_addBuiltins()
 	self._defaultDependencyGraph:insert(Pipeline.Startup)
 	self._defaultDependencyGraph:insert(self._defaultPhase)
 
-	local startupHasRan = {}
-
+	self:addRunCondition(Pipeline.Startup, conditions.runOnce())
 	for _, phase in Pipeline.Startup.dependencyGraph.nodes do
-		self:addRunCondition(phase, function()
-			local hasRan = startupHasRan[phase]
-
-			if not hasRan then
-				startupHasRan[phase] = true
-			end
-
-			return not hasRan
-		end)
+		self:addRunCondition(phase, conditions.runOnce())
 	end
 end
 
-local EVENT_CONNECT_METHODS = { "Connect", "On", "on", "connect" }
-
--- This is a modified function from Matter by evaera (https://github.com/evaera)
--- License: Copyright (c) 2021 Eryn L. K., MIT License
--- Source: https://github.com/matter-ecs/matter/blob/main/lib/hooks/useEvent.luau
 function Scheduler:_scheduleEvent(instance, event)
+	local connect = utils.getConnectFunction(instance, event)
+	assert(
+		connect,
+		"Couldn't connect to event as no valid connect methods were found! Ensure the passed event has a 'Connect' or an 'on' method!"
+	)
+
 	local identifier = getEventIdentifier(instance, event)
 
 	local dependencyGraph = DependencyGraph.new()
@@ -771,41 +764,9 @@ function Scheduler:_scheduleEvent(instance, event)
 		end
 	end
 
-	local eventInstance = instance
-
-	if typeof(event) == "RBXScriptSignal" or type(event) == "table" then
-		eventInstance = event
-	elseif type(event) == "string" then
-		eventInstance = instance[event]
-	end
-
-	if type(eventInstance) == "function" then
-		self._connectedEvents[identifier] = eventInstance
-		self._eventDependencyGraphs[identifier] = dependencyGraph
-
-		return eventInstance(eventInstance, callback)
-	elseif typeof(eventInstance) == "RBXScriptSignal" then
-		self._connectedEvents[identifier] = eventInstance
-		self._eventDependencyGraphs[identifier] = dependencyGraph
-
-		return eventInstance:Connect(callback)
-	end
-
-	if type(eventInstance) == "table" then
-		for _, method in EVENT_CONNECT_METHODS do
-			if type(eventInstance[method]) ~= "function" then
-				continue
-			end
-
-			self._connectedEvents[identifier] = eventInstance
-			self._eventDependencyGraphs[identifier] = dependencyGraph
-			return eventInstance[method](eventInstance, callback)
-		end
-	end
-
-	error(
-		"Couldn't connect to event as no valid connect methods were found! Ensure the passed event has a 'Connect' or an 'on' method!"
-	)
+	connect(callback)
+	self._connectedEvents[identifier] = true
+	self._eventDependencyGraphs[identifier] = dependencyGraph
 end
 
 function Scheduler:_getEventDependencyGraph(instance, event)

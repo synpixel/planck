@@ -85,9 +85,27 @@ function Plugin:build(scheduler: any)
 		end
 	)
 
+	local STARTUP_PHASES = { "PreStartup", "Startup", "PostStartup" }
+	local startupSystems = {}
+
 	scheduler:_addHook(scheduler.Hooks.SystemCall, function(args: HookArgs)
+		local id = systemToId[args.system.system]
+
 		return function()
-			jabbyScheduler:run(systemToId[args.system.system], args.nextFn)
+			for _id, _ in startupSystems do
+				jabbyScheduler:set_system_data(_id, {
+					paused = true,
+				})
+			end
+
+			jabbyScheduler:run(id, function()
+				args.nextFn()
+
+				local phase = tostring(args.system.phase)
+				if table.find(STARTUP_PHASES, phase) then
+					startupSystems[id] = true
+				end
+			end)
 		end
 	end)
 

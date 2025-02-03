@@ -34,7 +34,7 @@ function Plugin:build(scheduler: any)
 	local identifier = n > 1 and ` #{n}` or ""
 	local name = `Planck{identifier}`
 
-	local jabbyScheduler = Jabby.scheduler.create(name)
+	local jabbyScheduler = Jabby.scheduler.create()
 
 	local systemToId = {}
 
@@ -91,8 +91,13 @@ function Plugin:build(scheduler: any)
 		end
 	end)
 
-	table.insert(Jabby.public, jabbyScheduler)
-	Jabby.public.updated = true
+	Jabby.register({
+		applet = Jabby.applets.scheduler,
+		name = name,
+		configuration = {
+			scheduler = jabbyScheduler,
+		},
+	})
 end
 
 function Plugin.new()

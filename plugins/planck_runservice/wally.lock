@@ -244,10 +244,10 @@ dependencies = [["collections", "jsdotlua/collections@1.2.7"]]
 
 [[package]]
 name = "yetanotherclown/planck"
-version = "0.2.0-alpha.2"
+version = "0.2.0-rc.1"
 dependencies = []
 
 [[package]]
 name = "yetanotherclown/planck-runservice"
-version = "0.2.0-alpha.2"
-dependencies = [["Planck", "yetanotherclown/planck@0.2.0-alpha.2"], ["Jest", "jsdotlua/jest@3.10.0"], ["JestGlobals", "jsdotlua/jest-globals@3.10.0"]]
+version = "0.2.0-rc.1"
+dependencies = [["Planck", "yetanotherclown/planck@0.2.0-rc.1"], ["Jest", "jsdotlua/jest@3.10.0"], ["JestGlobals", "jsdotlua/jest-globals@3.10.0"]]

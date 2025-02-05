@@ -2,6 +2,11 @@
 
 set -e
 
+if [ ! -d "Packages" ] || [ ! -d "DevPackages" ]; then
+    sh scripts/install-packages.sh
+fi
+
+
 rojo sourcemap default.project.json -o sourcemap.json
 
 rm -rf dist

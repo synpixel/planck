@@ -11,7 +11,7 @@ You can install it with,
 
 ```toml
 [dependencies]
-MatterHooks = "yetanotherclown/planck-matter-hooks@0.1.0-rc.1"
+MatterHooks = "yetanotherclown/planck-matter-hooks@0.1.0"
 ```
 
 Then to set it up,

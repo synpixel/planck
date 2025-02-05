@@ -24,7 +24,8 @@ end
 local function getSystemName(system: any): string
 	local name = debug.info(system, "n")
 	if not name or string.len(name) == 0 then
-		name = debug.info(system, "sl")
+		local source, line = debug.info(system, "sl")
+		name = `{source}:{line}`
 	end
 
 	return name
@@ -52,19 +53,44 @@ end
 
 local EVENT_CONNECT_METHODS = { "Connect", "On", "on", "connect" }
 
-local function isValidEvent(instance, event)
+export type EventLike = RBXScriptSignal | {
+	connect: (self: EventLike, ...any) -> any,
+	[any]: any,
+} | {
+	Connect: (self: EventLike, ...any) -> any,
+	[any]: any,
+} | {
+	on: (self: EventLike, ...any) -> any,
+	[any]: any,
+}
+
+export type EventInstance = Instance | {
+	[any]: EventLike,
+}
+
+type ConnectFn<U...> = (callback: (U...) -> ()) -> ()
+
+-- This function is inspired by useEvent in Matter, a library by evaera (https://github.com/evaera)
+-- License: Copyright (c) 2021 Eryn L. K., MIT License
+-- Source: https://github.com/matter-ecs/matter/blob/main/lib/hooks/useEvent.luau
+local function getConnectFunction<U...>(
+	instance: EventInstance | EventLike,
+	event: string | EventLike
+): ConnectFn<U...>?
 	local eventInstance = instance
 
 	if typeof(event) == "RBXScriptSignal" or type(event) == "table" then
 		eventInstance = event
 	elseif type(event) == "string" then
-		eventInstance = instance[event]
+		eventInstance = (instance :: any)[event]
 	end
 
 	if type(eventInstance) == "function" then
-		return true
+		return eventInstance
 	elseif typeof(eventInstance) == "RBXScriptSignal" then
-		return true
+		return function(callback)
+			eventInstance:Connect(callback)
+		end
 	end
 
 	if type(eventInstance) == "table" then
@@ -73,11 +99,17 @@ local function isValidEvent(instance, event)
 				continue
 			end
 
-			return true
+			return function(callback)
+				eventInstance[method](eventInstance, callback)
+			end
 		end
 	end
 
-	return false
+	return nil
+end
+
+local function isValidEvent(instance, event)
+	return getConnectFunction(instance, event) ~= nil
 end
 
 return {
@@ -87,4 +119,5 @@ return {
 	isPipeline = isPipeline,
 	getEventIdentifier = getEventIdentifier,
 	isValidEvent = isValidEvent,
+	getConnectFunction = getConnectFunction,
 }

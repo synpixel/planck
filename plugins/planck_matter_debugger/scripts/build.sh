@@ -10,4 +10,4 @@ fi
 rojo sourcemap default.project.json -o sourcemap.json
 
 darklua process --config .darklua.json src/ dist/src
-rojo build build.project.json -o PlanckMatterHooks.rbxm
+rojo build build.project.json -o PlanckMatterDebugger.rbxm

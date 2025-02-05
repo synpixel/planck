@@ -148,9 +148,9 @@ local function condition(world)
 end
 
 local scheduler = Scheduler.new(world)
-    :setRunCondition(systemA, condition)
-    :setRunCondition(somePhase, condition)
-    :setRunCondition(somePipeline, condition)
+    :addRunCondition(systemA, condition)
+    :addRunCondition(somePhase, condition)
+    :addRunCondition(somePipeline, condition)
 ```
 
 Conditions can be useful, but you should use them carefully. It's suggested that you read our page on

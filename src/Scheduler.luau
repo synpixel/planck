@@ -557,12 +557,18 @@ function Scheduler:addSystems(systems, phase)
 	end
 
 	local foundSystem = false
+	local n = 0
 
 	for _, system in systems do
+		n += 1
 		if getSystem(system) then
 			foundSystem = true
 			self:addSystem(system, phase)
 		end
+	end
+
+	if n == 0 then
+		error("Empty table passed to Scheduler:addSystems({ }, phase?)")
 	end
 
 	if not foundSystem then

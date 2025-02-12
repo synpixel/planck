@@ -178,8 +178,9 @@ local scheduler = require("@shared/scheduler")
 local world = require("@shared/world")
 
 return function(systems)
-    scheduler
-        :addSystems(systems) -- Assuming you're using SystemTables!
+    if #systems ~= 0 then
+        scheduler:addSystems(systems) -- Assuming you're using SystemTables!
+    end
 end
 ```
 

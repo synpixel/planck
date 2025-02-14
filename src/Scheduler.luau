@@ -714,7 +714,7 @@ function Scheduler:addRunCondition(dependent, fn)
 
 	assert(
 		system or isPhase(dependent) or isPipeline(dependent),
-		"Attempt to pass unknown dependent into Scheduler:setRunCondition(unknown, _)"
+		"Attempt to pass unknown dependent into Scheduler:addRunCondition(unknown, _)"
 	)
 
 	if not self._runIfConditions[dependent] then

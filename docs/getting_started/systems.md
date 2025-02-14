@@ -54,12 +54,12 @@ Another way you can define a System is with a SystemTable.
 SystemTables contain not only the *function* but can also contain a Phase,
 Name, and Run Condition for Systems.
 
-| Field        | Type                |              |
-| ------------ | ------------------- | ------------ |
-| name         | string              | Optional     |
-| system       | function            | **Required** |
-| phase        | Phase               | Optional     |
-| runCondition | (...any) -> boolean | Optional     |
+| Field         | Type                    |              |
+| ------------- | ----------------------- | ------------ |
+| name          | string                  | Optional     |
+| system        | function                | **Required** |
+| phase         | Phase                   | Optional     |
+| runConditions | { (...any) -> boolean } | Optional     |
 
 The Name is used for debugging and used in tooling such as Jabby to help you identify systems, this is automatically inferred from the function name, so it's completely optional.
 
@@ -82,7 +82,7 @@ return {
     name = "systemA",
     system = systemA,
     phase = Planck.Phase.PreUpdate,
-    runCondition = condition
+    runConditions = { condition }
 }
 ```
 

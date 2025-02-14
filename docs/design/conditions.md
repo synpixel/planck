@@ -27,9 +27,9 @@ local function condition(world)
 end
 
 local scheduler = Scheduler.new(world)
-    :setRunCondition(systemA, condition)
-    :setRunCondition(somePhase, condition)
-    :setRunCondition(somePipeline, condition)
+    :addRunCondition(systemA, condition)
+    :addRunCondition(somePhase, condition)
+    :addRunCondition(somePipeline, condition)
 ```
 
 ## Common Conditions
@@ -57,7 +57,7 @@ local Scheduler = Planck.Scheduler
 local timePassed = Planck.timePassed
 
 local scheduler = Scheduler.new(world)
-    :setRunCondition(systemA, timePassed(10)) -- Run every 10 seconds
+    :addRunCondition(systemA, timePassed(10)) -- Run every 10 seconds
 ```
 
 It's important to note that `systemA` will still be ran on
@@ -76,7 +76,7 @@ local Scheduler = Planck.Scheduler
 local runOnce = Planck.runOnce
 
 local scheduler = Scheduler.new(world)
-    :setRunCondition(systemA, runOnce()) -- Run only once
+    :addRunCondition(systemA, runOnce()) -- Run only once
 ```
 
 ### On Event
@@ -92,7 +92,7 @@ local onEvent = Planck.onEvent
 
 local scheduler = Scheduler.new(world)
     -- Run out system only when there is a new Player
-    :setRunCondition(systemA, onEvent(Players.PlayerAdded))
+    :addRunCondition(systemA, onEvent(Players.PlayerAdded))
 ```
 
 It is important to note that we don't actually collect the events using
@@ -131,7 +131,7 @@ local isNot = Planck.isNot
 
 local scheduler = Scheduler.new(world)
     -- Run our system only when there is a new Player
-    :setRunCondition(systemA, isNot(onEvent(Players.PlayerAdded)))
+    :addRunCondition(systemA, isNot(onEvent(Players.PlayerAdded)))
 ```
 
 ## Ideas for Conditions
@@ -163,7 +163,7 @@ end
 
 local scheduler = Scheduler.new(world)
     -- Run the system only when the Player is alive
-    :setRunCondition(systemA, playerAlive())
+    :addRunCondition(systemA, playerAlive())
 ```
 
 This helps us to avoid unnecessarily running systems that only have behavior

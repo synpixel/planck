@@ -59,7 +59,7 @@ Name, and Run Condition for Systems.
 | name          | string                  | Optional     |
 | system        | function                | **Required** |
 | phase         | Phase                   | Optional     |
-| runConditions | { (...any) -> boolean } | Optional     |
+| runConditions | \{ (...any) -> boolean \} | Optional     |
 
 The Name is used for debugging and used in tooling such as Jabby to help you identify systems, this is automatically inferred from the function name, so it's completely optional.
 

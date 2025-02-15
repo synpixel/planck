@@ -1,6 +1,6 @@
 local RunService = game:GetService("RunService")
 
-local planck = require(script.Parent.roblox_packages.plank)
+local planck = require(script.Parent.roblox_packages.planck)
 
 local Phase = planck.Phase
 type Phase = planck.Phase

@@ -5,6 +5,5 @@
 
 .pesde
 *_packages/
-build/
 
 sourcemap.json

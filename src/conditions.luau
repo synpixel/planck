@@ -1,4 +1,4 @@
-local utils = require("@Project/utils")
+local utils = require("@project/utils")
 local get_connect_function = utils.get_connect_function
 
 type EventLike = utils.EventLike

@@ -3,22 +3,11 @@
   "tree": {
     "$className": "DataModel",
     "ReplicatedStorage": {
-      "DevPackages": {
-        "$path": "DevPackages"
+      "planck": {
+        "$path": "src"
       },
-      "Packages": {
-        "$className": "Folder",
-        "Project": {
-          "$path": "src"
-        },
-        "planckMatterHooks": {
-          "$path": "plugins/planck_matter_hooks/src"
-        }
-      }
-    },
-    "ServerScriptService": {
-      "run-tests": {
-        "$path": "scripts/run-tests.server.luau"
+      "planck_matter_hooks": {
+        "$path": "plugins/planck_matter_hooks/src"
       }
     }
   }

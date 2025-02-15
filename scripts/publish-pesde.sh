@@ -9,16 +9,10 @@ darklua process --config .darklua.json src/ dist/src
 
 cp README.md dist/README.md
 cp LICENSE.md dist/LICENSE.md
-cp wally.toml dist/wally.toml
-cp wally.lock dist/wally.lock
-
-cp build.project.json dist/default.project.json
-sed -i 's/dist\/src/src/' dist/default.project.json
+cp pesde.toml dist/pesde.toml
 
 cd ./dist
 
 if [ "$1" = "--publish" ]; then
-    wally publish
-else
-    wally package --output release.zip
+    pesde publish
 fi

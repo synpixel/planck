@@ -1,11 +1,11 @@
 --!nonstrict
-local DependencyGraph = require("@Project/DependencyGraph")
-local Pipeline = require("@Project/Pipeline")
-local Phase = require("@Project/Phase")
+local DependencyGraph = require("@project/DependencyGraph")
+local Pipeline = require("@project/Pipeline")
+local Phase = require("@project/Phase")
 
-local utils = require("@Project/utils")
-local hooks = require("@Project/hooks")
-local conditions = require("@Project/conditions")
+local utils = require("@project/utils")
+local hooks = require("@project/hooks")
+local conditions = require("@project/conditions")
 
 local get_system = utils.get_system
 local get_system_name = utils.get_system_name

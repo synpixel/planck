@@ -3,7 +3,8 @@
 /*.rbxl
 /*.rbxm
 
-DevPackages/
+.pesde
+*_packages/
 **/Packages/
 dist/
 build/

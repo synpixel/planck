@@ -14,6 +14,9 @@ build_files = ["src"]
 [indices]
 default = "https://github.com/pesde-pkg/index"
 
+[wally_indices]
+default = "https://github.com/UpliftGames/wally-index"
+
 [scripts]
 roblox_sync_config_generator = ".pesde/scripts/roblox_sync_config_generator.luau"
 sourcemap_generator = ".pesde/scripts/sourcemap_generator.luau"

@@ -364,7 +364,7 @@ end
 ---
 --- ```lua
 --- local my_scheduler = Scheduler.new()
----     :insert(myPhase, RunService, "Heartbeat")
+---     :insert(my_phase, RunService, "Heartbeat")
 --- ```
 
 --- @method insert
@@ -381,7 +381,7 @@ end
 ---
 --- ```lua
 --- local my_scheduler = Scheduler.new()
----     :insert(myPipeline, RunService, "Heartbeat")
+---     :insert(my_pipeline, RunService, "Heartbeat")
 --- ```
 
 function Scheduler:insert(dependency, instance, event)

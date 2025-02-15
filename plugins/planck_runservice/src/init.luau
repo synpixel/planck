@@ -55,50 +55,50 @@ export type Pipelines = {
 	PostSimulation: Pipeline,
 }
 
-local phases = {} :: Phases
+local Phases = {} :: Phases
 
-phases.PreRender = Phase.new("PreRender")
-phases.PreAnimation = Phase.new("PreAnimation")
-phases.PreSimulation = Phase.new("PreSimulation")
-phases.PostSimulation = Phase.new("PostSimulation")
+Phases.PreRender = Phase.new("PreRender")
+Phases.PreAnimation = Phase.new("PreAnimation")
+Phases.PreSimulation = Phase.new("PreSimulation")
+Phases.PostSimulation = Phase.new("PostSimulation")
 
-phases.First = Phase.new("First")
-phases.PreUpdate = Phase.new("PreUpdate")
-phases.Update = Phase.new("Update")
-phases.PostUpdate = Phase.new("PostUpdate")
-phases.Last = Phase.new("Last")
+Phases.First = Phase.new("First")
+Phases.PreUpdate = Phase.new("PreUpdate")
+Phases.Update = Phase.new("Update")
+Phases.PostUpdate = Phase.new("PostUpdate")
+Phases.Last = Phase.new("Last")
 
-local pipelines = {} :: Pipelines
+local Pipelines = {} :: Pipelines
 
-pipelines.Heartbeat = Pipeline.new("HeartbeatPipeline")
-	:insert(phases.First)
-	:insert(phases.PreUpdate)
-	:insert(phases.Update)
-	:insert(phases.PostUpdate)
-	:insert(phases.Last)
+Pipelines.Heartbeat = Pipeline.new("HeartbeatPipeline")
+	:insert(Phases.First)
+	:insert(Phases.PreUpdate)
+	:insert(Phases.Update)
+	:insert(Phases.PostUpdate)
+	:insert(Phases.Last)
 
-pipelines.PreRender = Pipeline.new("PreRenderPipeline"):insert(phases.PreRender)
+Pipelines.PreRender = Pipeline.new("PreRenderPipeline"):insert(Phases.PreRender)
 
-pipelines.PreAnimation = Pipeline.new("PreAnimationPipeline")
-	:insert(phases.PreAnimation)
+Pipelines.PreAnimation = Pipeline.new("PreAnimationPipeline")
+	:insert(Phases.PreAnimation)
 
-pipelines.PreSimulation = Pipeline.new("PreSimulationPipeline")
-	:insert(phases.PreSimulation)
+Pipelines.PreSimulation = Pipeline.new("PreSimulationPipeline")
+	:insert(Phases.PreSimulation)
 
-pipelines.PostSimulation = Pipeline.new("PostSimulationPipeline")
-	:insert(phases.PostSimulation)
+Pipelines.PostSimulation = Pipeline.new("PostSimulationPipeline")
+	:insert(Phases.PostSimulation)
 
 local Plugin = {}
 Plugin.__index = Plugin
 
 function Plugin:build<U...>(scheduler: Scheduler<U...>)
-	for event, pipeline in pipelines do
+	for event, pipeline in Pipelines do
 		scheduler:insert(pipeline, RunService, event)
 	end
 
 	local _scheduler = scheduler :: any
-	_scheduler._default_dependency_graph = (pipelines.Heartbeat :: any).dependency_graph
-	_scheduler._default_phase = phases.Update
+	_scheduler._default_dependency_graph = (Pipelines.Heartbeat :: any).dependency_graph
+	_scheduler._default_phase = Phases.Update
 end
 
 function Plugin.new()
@@ -112,6 +112,6 @@ type Plugin<U...> = {
 
 return {
 	Plugin = (Plugin :: any) :: Plugin<...any>,
-	phases = phases,
-	pipelines = pipelines,
+	Phases = Phases,
+	Pipelines = Pipelines,
 }

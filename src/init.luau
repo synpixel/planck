@@ -14,7 +14,7 @@ export type SystemTable<U...> = {
 	system: SystemFn<U...>,
 	phase: Phase?,
 	name: string?,
-	runConditions: { (U...) -> boolean }?,
+	run_conditions: { (U...) -> boolean }?,
 	[any]: any,
 }
 
@@ -25,7 +25,7 @@ export type Phase = {
 	Startup: Phase,
 	PostStartup: Phase,
 
-	new: (debugName: string?) -> Phase,
+	new: (debug_name: string?) -> Phase,
 }
 
 export type Pipeline = {
@@ -33,7 +33,7 @@ export type Pipeline = {
 
 	insert: (self: Pipeline, phase: Phase) -> Pipeline,
 	insertAfter: (self: Pipeline, phase: Phase, after: Phase) -> Pipeline,
-	new: (debugName: string?) -> Pipeline,
+	new: (debug_name: string?) -> Pipeline,
 }
 
 type Plugin<U...> = {
@@ -42,38 +42,41 @@ type Plugin<U...> = {
 }
 
 export type Scheduler<U...> = {
-	addPlugin: (self: Scheduler<U...>, plugin: Plugin<U...>) -> Scheduler<U...>,
+	add_plugin: (
+		self: Scheduler<U...>,
+		plugin: Plugin<U...>
+	) -> Scheduler<U...>,
 
-	addSystem: (
+	add_system: (
 		self: Scheduler<U...>,
 		system: System<U...>,
 		phase: Phase?
 	) -> Scheduler<U...>,
 
-	addSystems: (
+	add_systems: (
 		self: Scheduler<U...>,
 		systems: { System<U...> },
 		phase: Phase?
 	) -> Scheduler<U...>,
 
-	editSystem: (
+	edit_system: (
 		self: Scheduler<U...>,
 		system: System<U...>,
 		new: Phase
 	) -> Scheduler<U...>,
 
-	replaceSystem: (
+	replace_system: (
 		self: Scheduler<U...>,
 		system: System<U...>,
 		new: System<U...>
 	) -> Scheduler<U...>,
 
-	removeSystem: (
+	remove_system: (
 		self: Scheduler<U...>,
 		system: System<U...>
 	) -> Scheduler<U...>,
 
-	addRunCondition: ((
+	add_run_condition: ((
 		self: Scheduler<U...>,
 		system: System<U...>,
 		fn: (U...) -> boolean,
@@ -94,9 +97,9 @@ export type Scheduler<U...> = {
 		& ((self: Scheduler<U...>, phase: Phase) -> Scheduler<U...>)
 		& ((self: Scheduler<U...>, pipeline: Pipeline) -> Scheduler<U...>),
 
-	runAll: (self: Scheduler<U...>) -> Scheduler<U...>,
+	run_all: (self: Scheduler<U...>) -> Scheduler<U...>,
 
-	getDeltaTime: (self: Scheduler<U...>) -> number,
+	get_delta_time: (self: Scheduler<U...>) -> number,
 
 	insert: ((self: Scheduler<U...>, phase: Phase) -> Scheduler<U...>) & ((
 		self: Scheduler<U...>,
@@ -108,12 +111,12 @@ export type Scheduler<U...> = {
 		event: string | EventLike
 	) -> Scheduler<U...>) & ((
 		self: Scheduler<U...>,
-		Pipeline: Pipeline,
+		pipeline: Pipeline,
 		instance: EventInstance | EventLike,
 		event: string | EventLike
 	) -> Scheduler<U...>),
 
-	insertAfter: ((
+	insert_after: ((
 		self: Scheduler<U...>,
 		phase: Phase,
 		after: Phase | Pipeline
@@ -133,8 +136,8 @@ return {
 		new: <U...>(U...) -> Scheduler<U...>,
 	},
 
-	isNot = conditions.isNot,
-	runOnce = conditions.runOnce,
-	timePassed = conditions.timePassed,
-	onEvent = conditions.onEvent,
+	is_not = conditions.is_not,
+	run_once = conditions.run_once,
+	time_passed = conditions.time_passed,
+	on_event = conditions.on_event,
 }

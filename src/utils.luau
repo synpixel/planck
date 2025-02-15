@@ -11,7 +11,7 @@ type SystemTable<U...> = {
 
 type System<U...> = SystemFn<U...> | SystemTable<U...>
 
-local function getSystem<U...>(system: any): SystemTable<U...>?
+local function get_system<U...>(system: any): SystemTable<U...>?
 	if type(system) == "function" then
 		return system
 	elseif type(system) == "table" and system.system then
@@ -21,7 +21,7 @@ local function getSystem<U...>(system: any): SystemTable<U...>?
 	end
 end
 
-local function getSystemName(system: any): string
+local function get_system_name(system: any): string
 	local name = debug.info(system, "n")
 	if not name or string.len(name) == 0 then
 		local source, line = debug.info(system, "sl")
@@ -31,7 +31,7 @@ local function getSystemName(system: any): string
 	return name
 end
 
-local function isPhase(phase: any): Phase?
+local function is_phase(phase: any): Phase?
 	if type(phase) == "table" and phase._type == "phase" then
 		return phase
 	else
@@ -39,7 +39,7 @@ local function isPhase(phase: any): Phase?
 	end
 end
 
-local function isPipeline(pipeline: any): Pipeline?
+local function is_pipeline(pipeline: any): Pipeline?
 	if type(pipeline) == "table" and pipeline._type == "pipeline" then
 		return pipeline
 	else
@@ -47,7 +47,7 @@ local function isPipeline(pipeline: any): Pipeline?
 	end
 end
 
-local function getEventIdentifier(instance, event)
+local function get_event_identifier(instance, event)
 	return `{instance}{event and `@{event}` or ""}`
 end
 
@@ -73,34 +73,34 @@ type ConnectFn<U...> = (callback: (U...) -> ()) -> ()
 -- This function is inspired by useEvent in Matter, a library by evaera (https://github.com/evaera)
 -- License: Copyright (c) 2021 Eryn L. K., MIT License
 -- Source: https://github.com/matter-ecs/matter/blob/main/lib/hooks/useEvent.luau
-local function getConnectFunction<U...>(
+local function get_connect_function<U...>(
 	instance: EventInstance | EventLike,
 	event: string | EventLike
 ): ConnectFn<U...>?
-	local eventInstance = instance
+	local event_instance = instance
 
 	if typeof(event) == "RBXScriptSignal" or type(event) == "table" then
-		eventInstance = event
+		event_instance = event
 	elseif type(event) == "string" then
-		eventInstance = (instance :: any)[event]
+		event_instance = (instance :: any)[event]
 	end
 
-	if type(eventInstance) == "function" then
-		return eventInstance
-	elseif typeof(eventInstance) == "RBXScriptSignal" then
+	if type(event_instance) == "function" then
+		return event_instance
+	elseif typeof(event_instance) == "RBXScriptSignal" then
 		return function(callback)
-			eventInstance:Connect(callback)
+			event_instance:Connect(callback)
 		end
 	end
 
-	if type(eventInstance) == "table" then
+	if type(event_instance) == "table" then
 		for _, method in EVENT_CONNECT_METHODS do
-			if type(eventInstance[method]) ~= "function" then
+			if type(event_instance[method]) ~= "function" then
 				continue
 			end
 
 			return function(callback)
-				eventInstance[method](eventInstance, callback)
+				event_instance[method](event_instance, callback)
 			end
 		end
 	end
@@ -108,16 +108,16 @@ local function getConnectFunction<U...>(
 	return nil
 end
 
-local function isValidEvent(instance, event)
-	return getConnectFunction(instance, event) ~= nil
+local function is_valid_event(instance, event)
+	return get_connect_function(instance, event) ~= nil
 end
 
 return {
-	getSystem = getSystem,
-	getSystemName = getSystemName,
-	isPhase = isPhase,
-	isPipeline = isPipeline,
-	getEventIdentifier = getEventIdentifier,
-	isValidEvent = isValidEvent,
-	getConnectFunction = getConnectFunction,
+	get_system = get_system,
+	get_system_name = get_system_name,
+	is_phase = is_phase,
+	is_pipeline = is_pipeline,
+	get_event_identifier = get_event_identifier,
+	is_valid_event = is_valid_event,
+	get_connect_function = get_connect_function,
 }

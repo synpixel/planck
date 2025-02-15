@@ -21,43 +21,43 @@ end
 ---
 --- Adds a Phase to the Pipeline, ordering it implicitly.
 function Pipeline:insert(phase)
-	self.dependencyGraph:insert(phase)
+	self.dependency_graph:insert(phase)
 	return self
 end
 
---- @method insertAfter
+--- @method insert_after
 --- @within Pipeline
 --- @param phase Phase
 --- @param after Phase
 --- @return Pipeline
 ---
 --- Adds a Phase to the Pipeline after another Phase, ordering it explicitly.
-function Pipeline:insertAfter(phase, afterPhase)
-	local i = table.find(self.dependencyGraph.nodes, afterPhase)
+function Pipeline:insert_after(phase, after_phase)
+	local i = table.find(self.dependency_graph.nodes, after_phase)
 	assert(
 		i,
-		"Unknown Phase in Pipeline:insertAfter(_, unknown), try adding this Phase to the Pipeline."
+		"Unknown Phase in Pipeline:insert_after(_, unknown), try adding this Phase to the Pipeline."
 	)
 
-	self.dependencyGraph:insertAfter(phase, afterPhase)
+	self.dependency_graph:insert_after(phase, after_phase)
 	return self
 end
 
---- @method insertBefore
+--- @method insert_before
 --- @within Pipeline
 --- @param phase Phase
 --- @param before Phase
 --- @return Pipeline
 ---
 --- Adds a Phase to the Pipeline before another Phase, ordering it explicitly.
-function Pipeline:insertBefore(phase, beforePhase)
-	local i = table.find(self.dependencyGraph.nodes, beforePhase)
+function Pipeline:insert_before(phase, before_phase)
+	local i = table.find(self.dependency_graph.nodes, before_phase)
 	assert(
 		i,
-		"Unknown Phase in Pipeline:insertBefore(_, unknown), try adding this Phase to the Pipeline."
+		"Unknown Phase in Pipeline:insert_before(_, unknown), try adding this Phase to the Pipeline."
 	)
 
-	self.dependencyGraph:insertBefore(phase, beforePhase)
+	self.dependency_graph:insert_before(phase, before_phase)
 	return self
 end
 
@@ -70,7 +70,7 @@ function Pipeline.new(name: string?)
 	return setmetatable({
 		_name = name,
 		_type = "pipeline",
-		dependencyGraph = DependencyGraph.new(),
+		dependency_graph = DependencyGraph.new(),
 	}, Pipeline)
 end
 

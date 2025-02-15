@@ -40,11 +40,11 @@ function AdjacencyMatrix:extend()
 	end
 end
 
-function AdjacencyMatrix:setEdge(i, j, val)
+function AdjacencyMatrix:set_edge(i, j, val)
 	self.matrix[i][j] = val
 end
 
-function AdjacencyMatrix:toAdjacencyList()
+function AdjacencyMatrix:to_adjacency_list()
 	local list = {}
 
 	for i = 1, self.length do
@@ -59,21 +59,21 @@ function AdjacencyMatrix:toAdjacencyList()
 	return list
 end
 
-function AdjacencyMatrix:topologicalSort(): { number }?
-	local adjacencyList = self:toAdjacencyList()
+function AdjacencyMatrix:topological_ort(): { number }?
+	local adjacency_list = self:to_adjacency_list()
 
 	local result = {}
-	local inDegrees = table.create(self.length, 0)
+	local in_degrees = table.create(self.length, 0)
 
 	for i = 1, self.length do
-		for _, j in adjacencyList[i] do
-			inDegrees[j] += 1
+		for _, j in adjacency_list[i] do
+			in_degrees[j] += 1
 		end
 	end
 
 	local queue = {}
 	for i = 1, self.length do
-		if inDegrees[i] == 0 then
+		if in_degrees[i] == 0 then
 			table.insert(queue, i)
 		end
 	end
@@ -82,9 +82,9 @@ function AdjacencyMatrix:topologicalSort(): { number }?
 		local i = table.remove(queue, 1) :: number
 		table.insert(result, i)
 
-		for _, j in adjacencyList[i] do
-			inDegrees[j] -= 1
-			if inDegrees[j] == 0 then
+		for _, j in adjacency_list[i] do
+			in_degrees[j] -= 1
+			if in_degrees[j] == 0 then
 				table.insert(queue, j)
 			end
 		end
@@ -108,48 +108,48 @@ end
 local DependencyGraph = {}
 DependencyGraph.__index = DependencyGraph
 
-function DependencyGraph:getOrderedList(): { any }?
-	local orderedList = {}
+function DependencyGraph:get_ordered_list(): { any }?
+	local ordered_list = {}
 
-	local topologicalSort = self.matrix:topologicalSort()
-	if not topologicalSort then
+	local topological_sort = self.matrix:topological_sort()
+	if not topological_sort then
 		return nil
 	end
 
-	for _, i in topologicalSort do
-		table.insert(orderedList, self.nodes[i])
+	for _, i in topological_sort do
+		table.insert(ordered_list, self.nodes[i])
 	end
 
-	return orderedList
+	return ordered_list
 end
 
-function DependencyGraph:insertBefore(node, beforeNode)
-	if not table.find(self.nodes, beforeNode) then
-		error("Node not found in DependencyGraph:insertBefore(_, unknown)")
+function DependencyGraph:insert_before(node, before_node)
+	if not table.find(self.nodes, before_node) then
+		error("Node not found in DependencyGraph:insert_before(_, unknown)")
 	end
 
 	table.insert(self.nodes, node)
 	local j = #self.nodes
-	local i = table.find(self.nodes, beforeNode)
+	local i = table.find(self.nodes, before_node)
 
 	self.matrix:extend()
-	self.matrix:setEdge(j, i, 1)
+	self.matrix:set_edge(j, i, 1)
 
 	return self
 end
 
-function DependencyGraph:insertAfter(node, afterNode)
-	if not table.find(self.nodes, afterNode) then
-		error("Node not found in DependencyGraph:insertAfter(_, unknown)")
+function DependencyGraph:insert_after(node, after_node)
+	if not table.find(self.nodes, after_node) then
+		error("Node not found in DependencyGraph:insert_after(_, unknown)")
 	end
 
 	table.insert(self.nodes, node)
 
 	local j = #self.nodes
-	local i = table.find(self.nodes, afterNode)
+	local i = table.find(self.nodes, after_node)
 
 	self.matrix:extend()
-	self.matrix:setEdge(i, j, 1)
+	self.matrix:set_edge(i, j, 1)
 
 	return self
 end
@@ -162,7 +162,7 @@ function DependencyGraph:insert(node)
 	self.matrix:extend()
 
 	if i ~= 0 then
-		self.matrix:setEdge(i, j, 1)
+		self.matrix:set_edge(i, j, 1)
 	end
 
 	return self

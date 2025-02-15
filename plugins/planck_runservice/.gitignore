@@ -3,9 +3,8 @@
 /*.rbxl
 /*.rbxm
 
-DevPackages/
-Packages/
-dist/
+.pesde
+*_packages/
 build/
 
 sourcemap.json

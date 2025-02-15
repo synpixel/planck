@@ -1,6 +1,9 @@
 {
   "name": "PlanckRunService",
   "tree": {
-    "$path": "dist/src"
+    "$path": "src",
+    "roblox_packages": {
+      "$path": "roblox_packages"
+    }
   }
 }

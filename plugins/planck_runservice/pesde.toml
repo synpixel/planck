@@ -1,0 +1,26 @@
+name = "synpixel/planck_runservice"
+version = "0.2.0-rc.1"
+description = "YetAnotherClown's PlanckRunService, but snake_case"
+authors = ["YetAnotherClown"]
+repository = "https://github.com/synpixel/planck"
+license = "MIT"
+includes = ["README.md", "LICENSE.md", "pesde.toml", "src/**/*"]
+
+[target]
+environment = "roblox"
+lib = "src/init.luau"
+build_files = ["src"]
+
+[indices]
+default = "https://github.com/pesde-pkg/index"
+
+[scripts]
+roblox_sync_config_generator = ".pesde/scripts/roblox_sync_config_generator.luau"
+sourcemap_generator = ".pesde/scripts/sourcemap_generator.luau"
+
+[dev_dependencies]
+scripts = { name = "pesde/scripts_rojo", version = "^0.1.0", target = "lune" }
+rojo = { name = "pesde/rojo", version = "^7.4.4", target = "lune" }
+
+[dependencies]
+planck = { name = "synpixel/planck_snake_case", version = "^0.2.0-rc.1" }

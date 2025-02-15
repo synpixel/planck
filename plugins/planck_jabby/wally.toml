@@ -11,9 +11,5 @@ repository = "https://github.com/yetanotherclown/planck"
 
 include = ["wally.lock"]
 
-[dev-dependencies]
-Jest = "jsdotlua/jest@3.6.1-rc.2"
-JestGlobals = "jsdotlua/jest-globals@3.6.1-rc.2"
-
 [dependencies]
-Jabby = "alicesaidhi/jabby@0.2.0-rc.9"
+jabby = "alicesaidhi/jabby@0.2.0-rc.9"

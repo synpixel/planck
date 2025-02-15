@@ -23,4 +23,4 @@ scripts = { name = "pesde/scripts_rojo", version = "^0.1.0", target = "lune" }
 rojo = { name = "pesde/rojo", version = "^7.4.4", target = "lune" }
 
 [dependencies]
-jabby = { wally = "wally#/alicesaidhi/jabby", version = "^0.2.0-rc.9" }
+jabby = { wally = "wally#alicesaidhi/jabby", version = "^0.2.0-rc.9" }

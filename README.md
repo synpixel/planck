@@ -12,27 +12,27 @@ You can install Planck with Wally
 
 ```toml
 [dependencies]
-Planck = "yetanotherclown/planck@0.2.0-rc.1"
+planck = "yetanotherclown/planck@0.2.0-rc.1"
 ```
 
 ## What is Planck?
 
 Planck is a standalone scheduler, which allows you to execute code on specific events, with certain conditions, and in a particular order.
 
-This scheduler is library agnostic, which means that it *doesn't matter* which ECS library your using or if you're even using an ECS.
+This scheduler is library agnostic, which means that it _doesn't matter_ which ECS library your using or if you're even using an ECS.
 You can use this with [Jecs], [Matter], [ECR], and other Luau ECS Libraries.
 
 ## Does any of this really matter?
 
 Yes, and no.
-Your ECS code should be able to run in any order, without any conditions, and without concern for which event it's running on, as long as *it is* running.
+Your ECS code should be able to run in any order, without any conditions, and without concern for which event it's running on, as long as _it is_ running.
 
-The order of execution, and conditions both serve to *optimize* your code. Some systems don't need to run every frame, which is why we have conditions.
+The order of execution, and conditions both serve to _optimize_ your code. Some systems don't need to run every frame, which is why we have conditions.
 And the actual order of execution is to reduce latency between changes and effects in your ECS world.
 
-Let's say we have `systemA` and `systemB`. `systemA` modifies data in our world which `systemB` depends on.
-If `systemA` runs *after* `systemB`, then `systemB` will have to wait a whole frame for the modifications to be made.
-This is called being *off-by-a-frame*, and this is why we care about the order of execution.
+Let's say we have `system_a` and `system_b`. `system_a` modifies data in our world which `system_b` depends on.
+If `system_a` runs _after_ `system_b`, then `system_b` will have to wait a whole frame for the modifications to be made.
+This is called being _off-by-a-frame_, and this is why we care about the order of execution.
 
 ## What's Next?
 
@@ -49,11 +49,11 @@ While it's highly suggested you read the documentation, here is a quick overview
 This is the core of Planck, this is where you add your Systems and set your Phases, Pipelines, and Run Conditions.
 
 ```luau
-local Planck = require("@packages/Planck")
-local Scheduler = Planck.Scheduler
+local planck = require("@packages/planck")
+local Scheduler = planck.Scheduler
 
-local Jecs = require("@packages/Jecs")
-local World = Jecs.World
+local jecs = require("@packages/jecs")
+local World = jecs.World
 
 local world = World.new()
 local state = {}
@@ -66,11 +66,11 @@ local scheduler = Scheduler.new(world, state)
 Systems are really simple, they are just functions which run on an event or in a loop.
 
 ```luau
-local function systemA(world, state)
+local function system_a(world, state)
     -- ...
 end
 
-return systemA
+return system_a
 ```
 
 And to add it to our Scheduler,
@@ -78,10 +78,10 @@ And to add it to our Scheduler,
 ```luau
 -- ...
 
-local systemA = require("@shared/systems/systemA")
+local system_a = require("@shared/systems/system_a")
 
 local scheduler = Scheduler.new(world, state)
-    :addSystem(systemA)
+    :add_system(system_a)
 ```
 
 ### Phases
@@ -89,19 +89,19 @@ local scheduler = Scheduler.new(world, state)
 Phases are used to split up your frame into different sections, this allows us to schedule our systems to run at different moments of a given frame.
 
 ```luau
-local Planck = require("@packages/Planck")
-local Scheduler = Planck.Scheduler
-local Phase = Planck.Phase
+local planck = require("@packages/planck")
+local Scheduler = planck.Scheduler
+local Phase = planck.Phase
 
 -- ...
 
-local systemA = require("@shared/systems/systemA")
+local system_a = require("@shared/systems/system_a")
 
-local myPhase = Phase.new("myPhase")
+local my_phase = Phase.new("my_phase")
 
 local scheduler = Scheduler.new(world, state)
-    :insert(myPhase)
-    :addSystem(systemA, myPhase)
+    :insert(my_phase)
+    :add_system(system_a, my_phase)
 ```
 
 Planck has lots of built-in Phases that should work for most cases,
@@ -125,7 +125,7 @@ local UpdatePipeline = Pipeline.new()
 	:insert(Update)
 	:insert(PostUpdate)
 
-local scheduler = scheduler.new(world)
+local scheduler = Scheduler.new(world)
     :insert(UpdatePipeline, RunService, "Heartbeat")
 ```
 
@@ -140,7 +140,7 @@ run our Systems, Phases and Pipelines only sometimes.
 
 ```luau
 local function condition(world)
-    if someCondition then
+    if some_condition then
         return true
     else
         return false
@@ -148,9 +148,9 @@ local function condition(world)
 end
 
 local scheduler = Scheduler.new(world)
-    :addRunCondition(systemA, condition)
-    :addRunCondition(somePhase, condition)
-    :addRunCondition(somePipeline, condition)
+    :add_run_condition(system_a, condition)
+    :add_run_condition(some_phase, condition)
+    :add_run_condition(some_pipeline, condition)
 ```
 
 Conditions can be useful, but you should use them carefully. It's suggested that you read our page on

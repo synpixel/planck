@@ -3,19 +3,11 @@
   "tree": {
     "$className": "DataModel",
     "ReplicatedStorage": {
-      "DevPackages": {
-        "$path": "DevPackages"
-      },
-      "Packages": {
-        "Project": {
-          "$path": "src"
-        },
-        "$path": "Packages"
-      }
-    },
-    "ServerScriptService": {
-      "run-tests": {
-        "$path": "scripts/run-tests.server.luau"
+      "planck_jabby": {
+        "$path": "src",
+        "roblox_packages": {
+          "$path": "roblox_packages"
+        }
       }
     }
   }

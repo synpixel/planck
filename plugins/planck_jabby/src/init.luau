@@ -1,4 +1,4 @@
-local jabby = require(script.Parent.jabby)
+local jabby = require(script.Parent.roblox_packages.jabby)
 
 type SystemInfo = {
 	name: string,

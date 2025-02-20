@@ -276,7 +276,7 @@ function Scheduler:run(dependent)
 		error("No dependent specified in Scheduler:run(_)")
 	end
 
-	self:runPipeline(Pipeline.Startup)
+	self:run_pipeline(Pipeline.Startup)
 
 	if get_system(dependent) then
 		self:run_system(dependent)

@@ -59,7 +59,7 @@ function AdjacencyMatrix:to_adjacency_list()
 	return list
 end
 
-function AdjacencyMatrix:topological_ort(): { number }?
+function AdjacencyMatrix:topological_sort(): { number }?
 	local adjacency_list = self:to_adjacency_list()
 
 	local result = {}

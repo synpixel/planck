@@ -1,5 +1,5 @@
 name = "synpixel/planck_runservice"
-version = "0.2.0-rc.1"
+version = "0.2.0-rc.2"
 description = "YetAnotherClown's PlanckRunService, but snake_case"
 authors = ["YetAnotherClown"]
 repository = "https://github.com/synpixel/planck"
@@ -23,4 +23,4 @@ scripts = { name = "pesde/scripts_rojo", version = "^0.1.0", target = "lune" }
 rojo = { name = "pesde/rojo", version = "^7.4.4", target = "lune" }
 
 [dependencies]
-planck = { name = "synpixel/planck_snake_case", version = "^0.2.0-rc.1" }
+planck = { name = "synpixel/planck_snake_case", version = "^0.2.0-rc.2" }

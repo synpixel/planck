@@ -98,7 +98,7 @@ function Scheduler:_handle_logs(system_info)
 			warn(
 				`Planck: Error occurred in system{string.len(name) > 0 and ` '{name}'` or ""}, this error will be ignored for 10 seconds`
 			)
-			system_info.recentLogs[log_message] = true
+			system_info.recent_logs[log_message] = true
 		end
 	end
 

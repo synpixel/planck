@@ -115,6 +115,11 @@ end
 return {
 	time_passed = time_passed,
 	run_once = run_once,
-	on_event = on_event,
+	on_event = (on_event :: any) :: (<U...>(
+		instance: EventInstance,
+		event: string
+	) -> (Condition, CollectEvents<U...>)) & (<U...>(
+		event: EventLike
+	) -> (Condition, CollectEvents<U...>)),
 	is_not = is_not,
 }

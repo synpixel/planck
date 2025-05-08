@@ -1,7 +1,7 @@
 local utils = require("@project/utils")
 local get_connect_function = utils.get_connect_function
 
-type EventLike = utils.EventLike
+type EventLike<U...> = utils.EventLike<U...>
 type EventInstance = utils.EventInstance
 
 type Condition = () -> boolean
@@ -55,8 +55,8 @@ type CollectEvents<U...> = () -> () -> (number, U...)
 --- Checks for any new events and allows for the collection of
 --- those events.
 local function on_event<U...>(
-	instance: EventInstance | EventLike,
-	event: string | EventLike
+	instance: EventInstance | EventLike<U...>,
+	event: string | EventLike<U...>
 ): (Condition, CollectEvents<U...>)
 	local connect = get_connect_function(instance, event)
 	assert(connect, "Event passed to .on_event is not valid")
@@ -119,7 +119,7 @@ return {
 		instance: EventInstance,
 		event: string
 	) -> (Condition, CollectEvents<U...>)) & (<U...>(
-		event: EventLike
+		event: EventLike<U...>
 	) -> (Condition, CollectEvents<U...>)),
 	is_not = is_not,
 }

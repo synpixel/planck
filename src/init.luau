@@ -5,7 +5,7 @@ local Scheduler = require("@project/Scheduler") :: any
 local conditions = require("@project/conditions")
 local utils = require("@project/utils")
 
-type EventLike = utils.EventLike
+type EventLike<U...> = utils.EventLike<U...>
 type EventInstance = utils.EventInstance
 
 export type SystemFn<U...> = ((U...) -> any) | ((U...) -> ())
@@ -107,13 +107,13 @@ export type Scheduler<U...> = {
 	) -> Scheduler<U...>) & ((
 		self: Scheduler<U...>,
 		phase: Phase,
-		instance: EventInstance | EventLike,
-		event: string | EventLike
+		instance: EventInstance | EventLike<U...>,
+		event: string | EventLike<U...>
 	) -> Scheduler<U...>) & ((
 		self: Scheduler<U...>,
 		pipeline: Pipeline,
-		instance: EventInstance | EventLike,
-		event: string | EventLike
+		instance: EventInstance | EventLike<U...>,
+		event: string | EventLike<U...>
 	) -> Scheduler<U...>),
 
 	insert_after: ((

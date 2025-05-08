@@ -53,19 +53,19 @@ end
 
 local EVENT_CONNECT_METHODS = { "Connect", "On", "on", "connect" }
 
-export type EventLike = RBXScriptSignal | {
-	connect: (self: EventLike, ...any) -> any,
+export type EventLike<U...> = RBXScriptSignal<U...> | {
+	connect: (self: EventLike<U...>, U...) -> any,
 	[any]: any,
 } | {
-	Connect: (self: EventLike, ...any) -> any,
+	Connect: (self: EventLike<U...>, U...) -> any,
 	[any]: any,
 } | {
-	on: (self: EventLike, ...any) -> any,
+	on: (self: EventLike<U...>, U...) -> any,
 	[any]: any,
 }
 
 export type EventInstance = Instance | {
-	[any]: EventLike,
+	[any]: EventLike<...any>,
 }
 
 type ConnectFn<U...> = (callback: (U...) -> ()) -> ()
@@ -74,8 +74,8 @@ type ConnectFn<U...> = (callback: (U...) -> ()) -> ()
 -- License: Copyright (c) 2021 Eryn L. K., MIT License
 -- Source: https://github.com/matter-ecs/matter/blob/main/lib/hooks/useEvent.luau
 local function get_connect_function<U...>(
-	instance: EventInstance | EventLike,
-	event: string | EventLike
+	instance: EventInstance | EventLike<U...>,
+	event: string | EventLike<U...>
 ): ConnectFn<U...>?
 	local event_instance = instance
 
